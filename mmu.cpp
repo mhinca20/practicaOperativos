@@ -6,8 +6,16 @@
 #include <iostream>
 #include <fstream>
 #include <string.h>
+#include <bits/stdc++.h>
 
 using namespace std;
+int *memg;
+int *litnum ;
+int *litstr ;
+int *datanum ;
+char *datastr ;
+int *workload;
+
 
 void writeMemg(string nameFile,int limit, int *memg,int *litnum,int limiteNum,int *litstr,int limiteStr){
   ifstream archivo(nameFile);
@@ -141,19 +149,19 @@ int mainMemory(int argc, char* argv[]) {
 
   char *pMem = createMemory(max,argv[1]);
 
-  int *memg = (int *)pMem;
-  int *litnum = (int *)pMem+base[1];
-  int *litstr = (int *)pMem+base[2];
-  int *datanum = (int *)pMem+base[3];
-  char *datastr = (char*)((int *)pMem+base[4]);
-  int *workload = (int *)pMem+base[5];
+  memg = (int *)pMem;
+  litnum = (int *)pMem+base[1];
+  litstr = (int *)pMem+base[2];
+  datanum = (int *)pMem+base[3];
+  datastr = (char*)((int *)pMem+base[4]);
+  workload = (int *)pMem+base[5];
 
   writeMemg(string(argv[2]),tamano[0],memg,litnum,limite[1],litstr,limite[2]);
 
-  for(int i = 0; i<15;i++){
+  /*for(int i = 0; i<15;i++){
     unsigned int  var=*(memg+i);
     cout << var<<endl;
-  }
+  }*/
 
   //char valor[32768]={'h','o','l','a',' ','m','u','n','d','o',' ','m','k'};
   //cout << "Salida: "<< valor << endl;
@@ -164,4 +172,126 @@ int mainMemory(int argc, char* argv[]) {
   //int result = readMemg(memg, 2);
   //cout << "result: " << result << endl;*/
   return 0;
+}
+
+int main(int argc, char* argv[]){
+    mainMemory(argc,argv);
+    ifstream archivo("test.bew");
+    char linea[10000];
+    int opcode;
+    unsigned int memref;
+    unsigned int poslitnum;
+    unsigned int poslitstr;
+    unsigned int trans;
+    unsigned int op;
+    string value;
+    if(archivo.fail()) cerr << "Error al abrir el archivo" << endl;
+    else{
+
+        archivo.getline(linea, sizeof(linea));
+        for (int i=0; i<strlen(linea);i++){
+          opcode = stoi(string(linea).substr(i,1),0,16);
+          //cout << "i: "<< i<<endl;
+          switch(opcode) {
+            case 0:{
+              value=string(linea).substr(i,16);
+              cout << "Value: "<< value<<endl;
+              cout << "Opcode: "<<opcode<<endl;
+              memref=(stoi(value.substr(1,4),0,16))>>1;
+              cout<<"memref: "<< memref<<endl;
+              poslitnum=((stoi(value.substr(4,5),0,16))&131068)>>2;
+              cout <<"litnum: "<< poslitnum<<endl;
+              cout << "Es: "<< readLitnum(litnum,poslitnum) <<endl;
+
+
+              i+=15;
+              break;
+            }
+            case 1:{
+              value=string(linea).substr(i,16);
+              cout << "Value: "<< value<<endl;
+              cout << "Opcode: "<<opcode<<endl;
+              memref=(stoi(value.substr(1,4),0,16))>>1;
+              cout<<"memref: "<< memref<<endl;
+              poslitstr=(((stoi(value.substr(4,5),0,16))&131068)>>2);
+              cout <<"litstr: "<< poslitstr<<endl;
+              i+=15;
+              break;
+            }
+            case 2:{
+              value=string(linea).substr(i,16);
+              cout << "Value: "<< value<<endl;
+              cout << "Opcode: "<<opcode<<endl;
+              memref=(stoi(value.substr(1,4),0,16))>>1;
+              cout<<"memref: "<< memref<<endl;
+              poslitnum=((stoi(value.substr(4,5),0,16))&131068)>>2;
+              cout <<"litnum: "<< poslitnum<<endl;
+              i+=15;
+              break;
+            }
+            case 3:{
+              value=string(linea).substr(i,8);
+              cout << "Value: "<< value<<endl;
+              cout << "Opcode: "<<opcode<<endl;
+              memref=(stoi(value.substr(1,4),0,16))>>1;
+              cout<<"memref: "<< memref<<endl;
+              i+=7;
+              break;
+            }
+            case 4:{
+              value=string(linea).substr(i,16);
+              cout << "Value: "<< value<<endl;
+              cout << "Opcode: "<<opcode<<endl;
+              trans=(stoi(value.substr(1,1),0,16))&8;
+              cout<<"transf: "<< trans<<endl;
+              memref=(stoi(value.substr(2,4),0,16))&32767;
+              cout<<"memref: "<< memref<<endl;
+              if (trans){
+                  poslitnum=(stoi(value.substr(5,4),0,16)>>1);
+                  cout <<"litnum: "<< poslitnum<<endl;
+              }else{
+                  poslitstr=(stoi(value.substr(5,4),0,16)>>1);
+                  cout <<"litstr: "<< poslitstr<<endl;
+              }
+              i+=15;
+              break;
+            }
+            case 5:{
+
+              unsigned int memref1;
+              unsigned int memref2;
+              value=string(linea).substr(i,16);
+              cout << "Value: "<< value<<endl;
+              cout << "Opcode: "<<opcode<<endl;
+              op=(stoi(value.substr(1,1),0,16))>>1;
+              cout<<"operation: "<< op<<endl;
+              trans=(stoi(value.substr(1,1),0,16))&1;
+              cout<<"transf: "<< trans<<endl;
+              memref=(stoi(value.substr(2,4),0,16))>>1;
+              cout<<"memref: "<< memref<<endl;
+              memref1=((stoi(value.substr(5,5),0,16))&131068)>>2;
+              memref2=((stoi(value.substr(9,5),0,16))&262136)>>3;
+              cout<<"memref1: "<< memref1<<endl;
+              cout<<"memref2: "<< memref2<<endl;
+
+              i+=15;
+              break;
+            }
+            case 6:{
+              cout << "Opcode: "<<opcode<<endl;
+              i+=15;
+              break;
+            }
+            case 7:{
+              cout << "Opcode: "<<opcode<<endl;
+              i+=7;
+              break;
+            }
+
+          }
+
+        }
+
+    }
+    return 0;
 }
