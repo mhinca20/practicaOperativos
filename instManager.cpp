@@ -1,7 +1,7 @@
 #include <bits/stdc++.h>
 #include <iostream>   // std::cout
 #include <string>     // std::string, std::stoi
-#include <confMemory.cpp>
+#include "confMemory.cpp"
 using namespace std;
 
 int main(){
