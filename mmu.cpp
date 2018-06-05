@@ -8,6 +8,9 @@
 #include <string.h>
 #include <bits/stdc++.h>
 #include <map>
+#include <pthread.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 
 using namespace std;
 int *memg;
@@ -122,32 +125,7 @@ char* createMemory(int max, char* name){
 }
 
 
-int mainMemory(int argc, char* argv[]) {
-
-  char* memoryName;
-  string fileName;
-  if (argc>1) {
-    if (string(argv[1]).compare("-n")==0){
-      memoryName=argv[2];
-      fileName=argv[3];
-    }else{
-      fileName=argv[1];
-      cout<<"Ingrese el nombre de la memoria: ";
-      string a;
-      cin>>a;
-      memoryName=(char* )a.c_str();
-    }
-  }else{
-    cout<<"Ingrese el nombre de la memoria: ";
-    string a;
-    cin>>a;
-    memoryName=(char* )a.c_str();
-    cout<<"Ingrese el nombre del archivo de configuracion de memoria: ";
-    cin>> fileName;
-  }
-  cout<<memoryName<<endl;
-  cout<<fileName<<endl;
-
+int mainMemory(char* memoryName, string fileName) {
   ifstream archivo(fileName);
   char linea[128];
   int base[6],tamano[6],limite[6],max = 0,cont = 0;
@@ -677,134 +655,184 @@ int interprete(int opcode, string value,int pc){
 
 }
 
+void proceso(string file){
+  ifstream archivo(file);
+  char linea[10000];
+  int opcode;
+
+  string value;
+  //mapa con id:pc y clave:linea --< 1:a:=4
+  map<int,string> instructions;
+  readLitstr(litstr,0,11);
+
+  //
+  if(archivo.fail()) cerr << "Error al abrir el archivo" << endl;
+  else{
+
+      archivo.getline(linea, sizeof(linea));
+      int pc = 0;
+
+      //El primer recorrido
+      for (int i=0; i<strlen(linea);i++){
+
+        opcode = stoi(string(linea).substr(i,1),0,16);
+
+        //cout << "i: "<< i<<endl;
+        switch(opcode) {
+          case 0:{
+            instructions[pc]=string(linea).substr(i,16);
+
+
+            i+=15;
+            break;
+          }
+          case 1:{
+            instructions[pc]=string(linea).substr(i,16);
+            i+=15;
+            break;
+          }
+          case 2:{
+            instructions[pc]=string(linea).substr(i,16);
+            i+=15;
+            break;
+          }
+          case 3:{
+            instructions[pc]=string(linea).substr(i,8);
+            i+=7;
+            break;
+          }
+          case 4:{
+            instructions[pc]=string(linea).substr(i,16);
+            i+=15;
+            break;
+          }
+          case 5:{
+
+            instructions[pc]=string(linea).substr(i,16);
+            i+=15;
+            break;
+          }
+          case 6:{
+            instructions[pc]=string(linea).substr(i,16);
+            i+=15;
+            break;
+          }
+          case 7:{
+            instructions[pc]=string(linea).substr(i,16);
+            i+=15;
+            break;
+          }
+          case 8:{
+            instructions[pc]=string(linea).substr(i,8);
+            i+=7;
+            break;
+          }
+          case 9:{
+            instructions[pc]=string(linea).substr(i,8);
+            i+=7;
+            break;
+          }
+          case 10:{
+            instructions[pc]=string(linea).substr(i,16);
+            i+=15;
+            break;
+          }
+          case 11:{
+            instructions[pc]=string(linea).substr(i,8);
+            i+=7;
+            break;
+          }
+          case 12:{
+            instructions[pc]=string(linea).substr(i,8);
+            i+=7;
+            break;
+          }
+          case 13:{
+            instructions[pc]=string(linea).substr(i,16);
+            i+=15;
+            break;
+          }
+          case 14:{
+            instructions[pc]=string(linea).substr(i,2);
+            i++;
+            break;
+          }
+          case 15:{
+            instructions[pc]=string(linea).substr(i,2);
+            i++;
+            break;
+          }
+        }
+        pc++;
+      }
+      for(int i = 0; i < instructions.size() ; i++)
+      {
+        opcode = stoi(instructions[i].substr(0,1),0,16);
+        i = interprete(opcode, instructions[i],i);
+        if (i==-1){
+          cout <<"Pare por halt"<<endl;
+          i=instructions.size();
+        }
+        if (i==-2){
+          cout <<"Pare por break"<<endl;
+          i=instructions.size();
+        }
+
+      }
+  }
+}
+
 int main(int argc, char* argv[]){
+  char* memoryName;
+  string fileName;
+  string archivo[argc];
 
-    mainMemory(argc,argv);
-    ifstream archivo("test.bew");
-    char linea[10000];
-    int opcode;
+  if (argc>1) {
+    if (string(argv[1]).compare("-n")==0 && argc==4){
+      memoryName=argv[2];
+      fileName=argv[3];
 
-    string value;
-    //mapa con id:pc y clave:linea --< 1:a:=4
-    map<int,string> instructions;
-    readLitstr(litstr,0,11);
-
-    //
-    if(archivo.fail()) cerr << "Error al abrir el archivo" << endl;
-    else{
-
-        archivo.getline(linea, sizeof(linea));
-        int pc = 0;
-
-        //El primer recorrido
-        for (int i=0; i<strlen(linea);i++){
-
-          opcode = stoi(string(linea).substr(i,1),0,16);
-
-          //cout << "i: "<< i<<endl;
-          switch(opcode) {
-            case 0:{
-              instructions[pc]=string(linea).substr(i,16);
-
-
-              i+=15;
-              break;
-            }
-            case 1:{
-              instructions[pc]=string(linea).substr(i,16);
-              i+=15;
-              break;
-            }
-            case 2:{
-              instructions[pc]=string(linea).substr(i,16);
-              i+=15;
-              break;
-            }
-            case 3:{
-              instructions[pc]=string(linea).substr(i,8);
-              i+=7;
-              break;
-            }
-            case 4:{
-              instructions[pc]=string(linea).substr(i,16);
-              i+=15;
-              break;
-            }
-            case 5:{
-
-              instructions[pc]=string(linea).substr(i,16);
-              i+=15;
-              break;
-            }
-            case 6:{
-              instructions[pc]=string(linea).substr(i,16);
-              i+=15;
-              break;
-            }
-            case 7:{
-              instructions[pc]=string(linea).substr(i,16);
-              i+=15;
-              break;
-            }
-            case 8:{
-              instructions[pc]=string(linea).substr(i,8);
-              i+=7;
-              break;
-            }
-            case 9:{
-              instructions[pc]=string(linea).substr(i,8);
-              i+=7;
-              break;
-            }
-            case 10:{
-              instructions[pc]=string(linea).substr(i,16);
-              i+=15;
-              break;
-            }
-            case 11:{
-              instructions[pc]=string(linea).substr(i,8);
-              i+=7;
-              break;
-            }
-            case 12:{
-              instructions[pc]=string(linea).substr(i,8);
-              i+=7;
-              break;
-            }
-            case 13:{
-              instructions[pc]=string(linea).substr(i,16);
-              i+=15;
-              break;
-            }
-            case 14:{
-              instructions[pc]=string(linea).substr(i,2);
-              i++;
-              break;
-            }
-            case 15:{
-              instructions[pc]=string(linea).substr(i,2);
-              i++;
-              break;
-            }
-          }
-          pc++;
-
-
-        }
-        for(int i = 0; i < instructions.size() ; i++)
-        {
-          opcode = stoi(instructions[i].substr(0,1),0,16);
-          i = interprete(opcode, instructions[i],i);
-          if (i==-1){
-            cout <<"Pare por halt"<<endl;
-            i=instructions.size();
-          }
-          if (i==-2){
-            cout <<"Pare por break"<<endl;
-            i=instructions.size();
-          }
-
-        }
     }
-    return 0;
+    if(argc == 2){
+      fileName=argv[1];
+      cout<<"Ingrese el nombre de la memoria: ";
+      string a;
+      cin>>a;
+      memoryName=(char* )a.c_str();
+    }
+    if(argc == 3){
+      memoryName=argv[2];
+      cout<<"Ingrese el nombre del archivo de configuracion de memoria: ";
+      cin>>fileName;
+    }
+  }else{
+    cout<<"Ingrese el nombre de la memoria: ";
+    string a;
+    cin>>a;
+    memoryName=(char* )a.c_str();
+    cout<<"Ingrese el nombre del archivo de configuracion de memoria: ";
+    cin>> fileName;
+  }
+  int numArch=0;
+  cout << "ingrese numero de archivos: ";
+  cin>>numArch;
+  string archivos[numArch];
+  for(int i=0; i<numArch; i++){
+    cout<<"ingrese nombre del archivo: ";
+    cin>>archivos[i];
+  }
+  mainMemory(memoryName,fileName);
+
+  pid_t proc;
+  for(int i=0; i<numArch; i++){
+    if ((proc = ::fork()) == 0) {
+      cout << "---------------------------proceso " << i << endl;
+      proceso(archivos[i]);
+      _exit(EXIT_SUCCESS);
+    }
+  }
+  int status;
+  waitpid(proc, &status, 0);
+  //waitpid(proc2, &status, 0);
+
 }
