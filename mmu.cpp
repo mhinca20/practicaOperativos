@@ -22,7 +22,7 @@ void writeMemg(string nameFile,int limit, int *memg,int *litnum,int limiteNum,in
   ifstream archivo(nameFile);
   char linea[128];
   int base,tamano,limite,cont = 0,cont2=0,cont3=0;
-  if(archivo.fail())cerr << "Error al abrir el archivo Pruebas.txt" << endl;
+  if(archivo.fail())cerr << "Error al abrir el archivo para escribir en el segmento" << endl;
   else
     while(!archivo.eof()){
       archivo.getline(linea, sizeof(linea));
@@ -68,7 +68,7 @@ char* readLitstr(int *litstr, int pos, int limite){
   for(int i = pos; *((char*)litstr+i)!='\0' && i < limite; i++){
     value[i] = (char*)((char*)litstr+i);
   }
-  return *value; 
+  return *value;
 }
 
 char* readDatastr(char *datastr, int pos, int tamano){
@@ -123,14 +123,35 @@ char* createMemory(int max, char* name){
 
 
 int mainMemory(int argc, char* argv[]) {
-  if (argc != 3) {
-    cerr << "Usage control: <shmname>" << endl;
-    return 1;
+
+  char* memoryName;
+  string fileName;
+  if (argc>1) {
+    if (string(argv[1]).compare("-n")==0){
+      memoryName=argv[2];
+      fileName=argv[3];
+    }else{
+      fileName=argv[1];
+      cout<<"Ingrese el nombre de la memoria: ";
+      string a;
+      cin>>a;
+      memoryName=(char* )a.c_str();
+    }
+  }else{
+    cout<<"Ingrese el nombre de la memoria: ";
+    string a;
+    cin>>a;
+    memoryName=(char* )a.c_str();
+    cout<<"Ingrese el nombre del archivo de configuracion de memoria: ";
+    cin>> fileName;
   }
-  ifstream archivo(argv[2]);
+  cout<<memoryName<<endl;
+  cout<<fileName<<endl;
+
+  ifstream archivo(fileName);
   char linea[128];
   int base[6],tamano[6],limite[6],max = 0,cont = 0;
-  if(archivo.fail()) cerr << "Error al abrir el archivo Pruebas.txt" << endl;
+  if(archivo.fail()) cerr << "Error al abrir el archivo de configuracion" << endl;
   else
     while(!archivo.eof()){
         archivo.getline(linea, sizeof(linea));
@@ -153,15 +174,15 @@ int mainMemory(int argc, char* argv[]) {
   max = limite[5];
   archivo.close();
 
-  char *pMem = createMemory(max,argv[1]);
+  char *pMem = createMemory(max,memoryName);
   memg = (int *)pMem;
   litnum = (int *)pMem+base[1];
   litstr = (int *)pMem+base[2];
   datanum = (int *)pMem+base[3];
   datastr = (char*)((int *)pMem+base[4]);
   workload = (int *)pMem+base[5];
-  cout <<"data num: "<< base[4]<<endl;
-  writeMemg(string(argv[2]),tamano[0],memg,litnum,limite[1],litstr,limite[2]);
+  //cout <<"data num: "<< base[4]<<endl;
+  writeMemg(string(fileName),tamano[0],memg,litnum,limite[1],litstr,limite[2]);
 
   /*for(int i = 0; i<15;i++){
     unsigned int  var=*(memg+i);
@@ -181,13 +202,15 @@ int mainMemory(int argc, char* argv[]) {
 
 int interprete(int opcode, string value,int pc){
   unsigned int memref;
+  unsigned int memref1;
+  unsigned int memref2;
   unsigned int poslitnum,posdatanum;
   unsigned int poslitstr,posdatastr;
   unsigned int trans;
-  unsigned int op;
+  unsigned int op,enteroDes;
   switch(opcode) {
     case 0:{
-      
+
       cout << "Value: "<< value<<endl;
       cout << "Opcode: "<<opcode<<endl;
       memref=(stoi(value.substr(1,4),0,16))>>1;
@@ -197,7 +220,6 @@ int interprete(int opcode, string value,int pc){
       cout << "Es: "<< readLitnum(litnum,poslitnum) <<endl;
       int readValue = readLitnum(litnum,poslitnum);
       writeDatanum(datanum, memref, readValue);
-
 
       return pc;
     }
@@ -209,9 +231,9 @@ int interprete(int opcode, string value,int pc){
       poslitstr=(((stoi(value.substr(4,5),0,16))&131068)>>2);
       cout <<"litstr: "<< poslitstr<<endl;
       char* readValue = readLitstr(litstr,poslitstr,10);
-      cout<<"salida de readvalue: "<<readValue<<endl;
+      //cout<<"salida de readvalue: "<<readValue<<endl;
       writeDatastr(datastr, memref, readValue);
-      
+
       return pc;
     }
     case 2:{
@@ -224,7 +246,7 @@ int interprete(int opcode, string value,int pc){
       int readValue = readLitnum(litnum,poslitnum);
       writeDatanum(datanum,memref,(readValue+pc));
 
-      return pc; 
+      return pc;
     }
     case 3:{
       cout << "Value: "<< value<<endl;
@@ -232,7 +254,7 @@ int interprete(int opcode, string value,int pc){
       memref=(stoi(value.substr(1,4),0,16))>>1;
       cout<<"memref: "<< memref<<endl;
       int readValue = readDatanum(datanum,memref);
-      
+
       return (readValue-1);
     }
     case 4:{
@@ -256,9 +278,293 @@ int interprete(int opcode, string value,int pc){
       return pc;
     }
     case 5:{
+      cout << "Value: "<< value<<endl;
+      cout << "Opcode: "<<opcode<<endl;
+      op=(stoi(value.substr(1,1),0,16))>>1;
+      cout<<"operation: "<< op<<endl;
+      trans=(stoi(value.substr(1,1),0,16))&1;
+      cout<<"transf: "<< trans<<endl;
+      memref=(stoi(value.substr(2,4),0,16))>>1;
+      cout<<"memref: "<< memref<<endl;
+      memref1=((stoi(value.substr(5,5),0,16))&131068)>>2;
+      memref2=((stoi(value.substr(9,5),0,16))&262136)>>3;
+      cout<<"memref1: "<< memref1<<endl;
+      cout<<"memref2: "<< memref2<<endl;
+      if (trans){
+        if(op==0){
+          int readValue1 = readDatanum(datanum,memref1);
+          int readValue2 = readDatanum(datanum,memref2);
+          int result= readValue1+readValue2;
+          writeDatanum(datanum,memref,result);
+        }else if(op==1){
+          int readValue1 = readDatanum(datanum,memref1);
+          int readValue2 = readDatanum(datanum,memref2);
+          int result= readValue1-readValue2;
+          writeDatanum(datanum,memref,result);
 
-      unsigned int memref1;
-      unsigned int memref2;
+        }else if(op==2){
+          int readValue1 = readDatanum(datanum,memref1);
+          int readValue2 = readDatanum(datanum,memref2);
+          int result= readValue1*readValue2;
+          writeDatanum(datanum,memref,result);
+
+        }else if(op==3){
+          int readValue1 = readDatanum(datanum,memref1);
+          int readValue2 = readDatanum(datanum,memref2);
+          int result= readValue1/readValue2;
+          writeDatanum(datanum,memref,result);
+
+        }else if(op==4){
+          int readValue1 = readDatanum(datanum,memref1);
+          int readValue2 = readDatanum(datanum,memref2);
+          int result= readValue1%readValue2;
+          writeDatanum(datanum,memref,result);
+
+        }
+
+      }else{
+        if (op==0){
+          char* readValue1 = readDatastr(datastr,memref1,128);
+          char* readValue2 = readDatastr(datastr,memref2,128);
+          string cadena= (string)(readValue1);
+          string cadena1= (string)(readValue2);
+          string mayor;
+          string result;
+          int longitud;
+          if (cadena.size()<cadena1.size()){
+            longitud=cadena.size();
+            mayor=cadena1;
+          }else{
+            longitud=cadena1.size();
+            mayor=cadena;
+          }
+          for (int i=0; i<longitud;i++){
+            int a;
+            a= (cadena[i]+cadena1[i]);
+            a= a%127;
+            result+= a;
+          }
+          result.append(mayor,longitud,mayor.size()-longitud);
+          char* result2= (char*)result.c_str();
+          writeDatastr(datastr,memref,result2);
+        }else if(op==1){
+          char* readValue1 = readDatastr(datastr,memref1,128);
+          char* readValue2 = readDatastr(datastr,memref2,128);
+          string cadena= (string)(readValue1);
+          string cadena1= (string)(readValue2);
+          string mayor;
+          string result;
+          int longitud;
+          if (cadena.size()<cadena1.size()){
+            longitud=cadena.size();
+            mayor=cadena1;
+          }else{
+            longitud=cadena1.size();
+            mayor=cadena;
+          }
+          for (int i=0; i<longitud;i++){
+            int a;
+            a= (cadena[i]-cadena1[i]);
+            a= a%127;
+            if (a<0){
+              a= a*(-1);
+            }
+            result+= a;
+          }
+          result.append(mayor,longitud,mayor.size()-longitud);
+          char* result2= (char*)result.c_str();
+          writeDatastr(datastr,memref,result2);
+
+        }else if(op==2){
+          char* readValue1 = readDatastr(datastr,memref1,128);
+          char* readValue2 = readDatastr(datastr,memref2,128);
+          string cadena= (string)(readValue1);
+          string cadena1= (string)(readValue2);
+          string mayor;
+          string result;
+          int longitud;
+          if (cadena.size()<cadena1.size()){
+            longitud=cadena.size();
+            mayor=cadena1;
+          }else{
+            longitud=cadena1.size();
+            mayor=cadena;
+          }
+          for (int i=0; i<longitud;i++){
+            int a;
+            a= (cadena[i]*cadena1[i]);
+            a= a%127;
+            result+= a;
+          }
+          result.append(mayor,longitud,mayor.size()-longitud);
+          char* result2= (char*)result.c_str();
+          writeDatastr(datastr,memref,result2);
+
+        }else if(op==3){
+          char* readValue1 = readDatastr(datastr,memref1,128);
+          char* readValue2 = readDatastr(datastr,memref2,128);
+          string cadena= (string)(readValue1);
+          string cadena1= (string)(readValue2);
+          string mayor;
+          string result;
+          int longitud;
+          if (cadena.size()<cadena1.size()){
+            longitud=cadena.size();
+            mayor=cadena1;
+          }else{
+            longitud=cadena1.size();
+            mayor=cadena;
+          }
+          for (int i=0; i<longitud;i++){
+            int a;
+            a= (cadena[i]/cadena1[i]);
+            a= a%127;
+            result+= a;
+          }
+          result.append(mayor,longitud,mayor.size()-longitud);
+          char* result2= (char*)result.c_str();
+          writeDatastr(datastr,memref,result2);
+
+        }else if(op==4){
+          char* readValue1 = readDatastr(datastr,memref1,128);
+          char* readValue2 = readDatastr(datastr,memref2,128);
+          string cadena= (string)(readValue1);
+          string cadena1= (string)(readValue2);
+          string mayor;
+          string result;
+          int longitud;
+          if (cadena.size()<cadena1.size()){
+            longitud=cadena.size();
+            mayor=cadena1;
+          }else{
+            longitud=cadena1.size();
+            mayor=cadena;
+          }
+          for (int i=0; i<longitud;i++){
+            int a;
+            a= (cadena[i]%cadena1[i]);
+            a= a%127;
+            result+= a;
+          }
+          result.append(mayor,longitud,mayor.size()-longitud);
+          char* result2= (char*)result.c_str();
+          writeDatastr(datastr,memref,result2);
+
+
+        }
+      }
+      return pc;
+    }
+
+    case 6:{
+      cout << "Value: "<< value<<endl;
+      cout << "Opcode: "<<opcode<<endl;
+      trans=((stoi(value.substr(1,1),0,16))&8)>>3;
+      cout<<"transf: "<< trans<<endl;
+      memref=(stoi(value.substr(1,4),0,16))&32767;
+      cout<<"memref: "<< memref<<endl;
+      if (trans){
+          posdatanum=(stoi(value.substr(5,4),0,16)>>1);
+          cout <<"litnum: "<< posdatanum<<endl;
+          enteroDes=(stoi(value.substr(8,5),0,16)&131068);
+
+          int readValue=readLitnum(litnum,enteroDes);
+          int readValue2= readDatanum(datanum,readValue+posdatanum);
+          writeDatanum(datanum,memref,readValue2);
+      }else{
+          posdatastr=(stoi(value.substr(5,4),0,16)>>1);
+          cout <<"litstr: "<< posdatastr<<endl;
+          enteroDes=(stoi(value.substr(8,5),0,16)&131068);
+          int readValue=readLitnum(litnum,enteroDes);
+          char* readValue2 = readDatastr(datastr,posdatastr+readValue,128);
+          writeDatastr(datastr,memref,readValue2);
+      }
+      return pc;
+    }
+    case 7:{
+      cout << "Value: "<< value<<endl;
+      cout << "Opcode: "<<opcode<<endl;
+      trans=((stoi(value.substr(1,1),0,16))&8)>>3;
+      cout<<"transf: "<< trans<<endl;
+      memref=(stoi(value.substr(1,4),0,16))&32767;
+      cout<<"memref: "<< memref<<endl;
+      if (trans){
+          enteroDes=(stoi(value.substr(5,4),0,16)>>1);
+          posdatanum=(stoi(value.substr(8,5),0,16)&131068);
+          cout <<"litnum: "<< posdatanum<<endl;
+          int readValue=readLitnum(litnum,enteroDes);
+          int readValue2=readDatanum(datanum,posdatanum);
+          writeDatanum(datanum,memref+readValue,readValue2);
+      }else{
+          enteroDes=(stoi(value.substr(5,4),0,16)>>1);
+          posdatastr=(stoi(value.substr(8,5),0,16)&131068);
+          cout <<"litstr: "<< posdatastr<<endl;
+          int readValue=readLitnum(litnum,enteroDes);
+          char* readValue2 = readDatastr(datastr,posdatastr,128);
+          writeDatastr(datastr,memref+readValue,readValue2);
+      }
+      return pc;
+    }
+    case 8:{
+      cout << "Value: "<< value<<endl;
+      cout << "Opcode: "<<opcode<<endl;
+      memref=(stoi(value.substr(1,4),0,16))>>1;
+      cout<<"memref: "<< memref<<endl;
+      int readValue;
+      cout<<"Ingrese un entero: ";
+      cin>>readValue;
+      writeDatanum(datanum,memref,readValue);
+      return pc;
+    }
+    case 9:{
+      cout << "Value: "<< value<<endl;
+      cout << "Opcode: "<<opcode<<endl;
+      memref=(stoi(value.substr(1,4),0,16))>>1;
+      cout<<"memref: "<< memref<<endl;
+      int readValue=readDatanum(datanum,memref);
+      cout<<"writeInt: "<<readValue<<endl;
+      return pc;
+
+    }
+    case 10:{
+      cout << "Value: "<< value<<endl;
+      cout << "Opcode: "<<opcode<<endl;
+      memref=(stoi(value.substr(1,4),0,16))>>1;
+      cout<<"memref: "<< memref<<endl;
+      memref2=((stoi(value.substr(4,5),0,16))&131068)>>2;
+      string valor;
+      for (int i=0;i<memref2;i++){
+        char a;
+        cout<<"Valor: ";
+        cin>>a;
+        if (a=='\0'){
+          i=memref2;
+        }
+        cout<<a<<endl;
+        valor+=a;
+      }
+      char* valor2= (char* )valor.c_str();
+      writeDatastr(datastr,memref, valor2);
+      return pc;
+    }
+    case 11:{
+      cout << "Value: "<< value<<endl;
+      cout << "Opcode: "<<opcode<<endl;
+      memref=(stoi(value.substr(1,4),0,16))>>1;
+      cout<<"memref: "<< memref<<endl;
+      char* readValue=readDatastr(datastr,memref,128);
+      cout<<"writeStr: "<<readValue<<endl;
+      return pc;
+    }
+    case 12:{
+      cout << "Value: "<< value<<endl;
+      cout << "Opcode: "<<opcode<<endl;
+      memref=(stoi(value.substr(1,4),0,16))>>1;
+      int readValue=readLitnum(litnum,memref);
+      pc=readValue;
+      return pc;
+    }
+    case 13:{
       cout << "Value: "<< value<<endl;
       cout << "Opcode: "<<opcode<<endl;
       op=(stoi(value.substr(1,1),0,16))>>1;
@@ -272,16 +578,98 @@ int interprete(int opcode, string value,int pc){
       cout<<"memref1: "<< memref1<<endl;
       cout<<"memref2: "<< memref2<<endl;
 
+      if (trans){
+        if (op==0){//>=
+          int readValue=readDatanum(datanum,memref);
+          int readValue2=readDatanum(datanum,memref1);
+          if(readValue>=readValue2){
+            pc=readLitnum(litnum,memref2);
+          }
+        }else if(op==1){
+          int readValue=readDatanum(datanum,memref);
+          int readValue2=readDatanum(datanum,memref1);
+          if(readValue>readValue2){
+            pc=readLitnum(litnum,memref2);
+          }
+        }else if(op==2){
+          int readValue=readDatanum(datanum,memref);
+          int readValue2=readDatanum(datanum,memref1);
+          if(readValue<=readValue2){
+            pc=readLitnum(litnum,memref2);
+          }
+        }else if (op==3){
+          int readValue=readDatanum(datanum,memref);
+          int readValue2=readDatanum(datanum,memref1);
+          if(readValue<readValue2){
+            pc=readLitnum(litnum,memref2);
+          }
+        }else if(op==4){
+          int readValue=readDatanum(datanum,memref);
+          int readValue2=readDatanum(datanum,memref1);
+          if(readValue==readValue2){
+            pc=readLitnum(litnum,memref2);
+          }
+        }else if(op==5){
+          int readValue=readDatanum(datanum,memref);
+          int readValue2=readDatanum(datanum,memref1);
+          if(readValue!=readValue2){
+            pc=readLitnum(litnum,memref2);
+          }
+        }
+      }else{//char* readDatastr(char *datastr, int pos, int tamano)
+        if (op==0){//>=
+          char* readValue=readDatastr(datastr,memref,1);
+          char* readValue2=readDatastr(datastr,memref1,1);
+          if(readValue[0]>=readValue2[0]){
+            pc=readLitnum(litnum,memref2);
+          }
+        }else if (op==1){
+          char* readValue=readDatastr(datastr,memref,1);
+          char* readValue2=readDatastr(datastr,memref1,1);
+          if(readValue[0]>readValue2[0]){
+            pc=readLitnum(litnum,memref2);
+          }
+        }else if(op==2){
+          char* readValue=readDatastr(datastr,memref,1);
+          char* readValue2=readDatastr(datastr,memref1,1);
+          if(readValue[0]<=readValue2[0]){
+            pc=readLitnum(litnum,memref2);
+          }
+        }else if (op==3){
+          char* readValue=readDatastr(datastr,memref,1);
+          char* readValue2=readDatastr(datastr,memref1,1);
+          if(readValue[0]<readValue2[0]){
+            pc=readLitnum(litnum,memref2);
+          }
+        }else if (op==4){
+          char* readValue=readDatastr(datastr,memref,1);
+          char* readValue2=readDatastr(datastr,memref1,1);
+          if(readValue[0]==readValue2[0]){
+            pc=readLitnum(litnum,memref2);
+          }
+        }else if (op==5){
+          char* readValue=readDatastr(datastr,memref,1);
+          char* readValue2=readDatastr(datastr,memref1,1);
+          if(readValue[0]!=readValue2[0]){
+            pc=readLitnum(litnum,memref2);
+          }
+        }
+      }
       return pc;
     }
-    case 6:{
+    case 14:{
+      cout << "Value: "<< value<<endl;
       cout << "Opcode: "<<opcode<<endl;
+      pc=-1;
       return pc;
     }
-    case 7:{
+    case 15:{
+      cout << "Value: "<< value<<endl;
       cout << "Opcode: "<<opcode<<endl;
+      pc=-2;
       return pc;
     }
+
     return pc;
 
 
@@ -295,7 +683,7 @@ int main(int argc, char* argv[]){
     ifstream archivo("test.bew");
     char linea[10000];
     int opcode;
-    
+
     string value;
     //mapa con id:pc y clave:linea --< 1:a:=4
     map<int,string> instructions;
@@ -307,7 +695,7 @@ int main(int argc, char* argv[]){
 
         archivo.getline(linea, sizeof(linea));
         int pc = 0;
-        
+
         //El primer recorrido
         for (int i=0; i<strlen(linea);i++){
 
@@ -407,6 +795,15 @@ int main(int argc, char* argv[]){
         {
           opcode = stoi(instructions[i].substr(0,1),0,16);
           i = interprete(opcode, instructions[i],i);
+          if (i==-1){
+            cout <<"Pare por halt"<<endl;
+            i=instructions.size();
+          }
+          if (i==-2){
+            cout <<"Pare por break"<<endl;
+            i=instructions.size();
+          }
+
         }
     }
     return 0;
