@@ -1,17 +1,12 @@
 CXXFLAGS=-std=c++11
 
-all: control
+control: control.o interpreter.o
+	$(CXX) -o $@ $^ -lrt -lpthread $(CXXFLAGS)
 
-conf: confMemory.o
-	$(CXX) $(CXXFLAGS) -o $@ $^ -lrt
+control.o: control.cpp control.h interpreter.h
 
-control: mmu.o
-	$(CXX) $(CXXFLAGS) -o $@ $^ -lrt
-
-confMemory.o: confMemory.cpp
-
-mmu.o: mmu.cpp
+interpreter.o: interpreter.cpp interpreter.h
 
 clean:
-	rm -f control conf
-	rm -f *.o *.*~ *~ 
+	rm -f control interpreter
+	rm -f *.o *.*~ *~
