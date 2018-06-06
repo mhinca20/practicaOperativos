@@ -33,10 +33,10 @@ class Interpreter {
   int readMemg(int *memg, int pos);
   int readLitnum(int *litnum, int pos);
   char* readLitstr(int *litstr, int pos, int limite);
-  char* readDatastr(char *datastr, int pos, int tamano);
-  int readDatanum(int *datanum, int pos);
-  void writeDatastr(char *datastr, int pos, char* data);
-  void writeDatanum(int *datanum, int pos, int data);
+  char* readDatastr(char *datastr, int pos, int tamano,int politica);
+  int readDatanum(int *datanum, int pos,int politica);
+  void writeDatastr(char *datastr, int pos, char* data,int politica);
+  void writeDatanum(int *datanum, int pos, int data,int politica);
   int interprete(int opcode, string value,int pc);
   void proceso(string file);
 };

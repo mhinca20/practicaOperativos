@@ -1,7 +1,23 @@
 #include "interpreter.h"
 
+
+int politicas[4];
+int inicio[4];
+int fin[4];
+//int nroLineas[4];
+int inicioLineas[8];
+int finLineas[8];
+int cuentaescr=0;
+int cuentalect=0;
+int cuentalect2=0;
+
+
+
 Interpreter::Interpreter(int *memg1, int *litnum1, int *litstr1, int *datanum1, char *datastr1, sem_t *workload1):
- memg(memg1), litnum(litnum1), litstr(litstr1), datanum(datanum1), datastr(datastr1),workload(workload1){}
+ memg(memg1), litnum(litnum1), litstr(litstr1), datanum(datanum1), datastr(datastr1),workload(workload1){
+
+
+ }
 
 Interpreter::~Interpreter() {}
 
@@ -58,27 +74,217 @@ char* Interpreter::readLitstr(int *litstr, int pos, int limite){
   return *value;
 }
 
-char* Interpreter::readDatastr(char *datastr, int pos, int tamano){
+char* Interpreter::readDatastr(char *datastr, int pos, int tamano,int politica){
   char* cadena[128];
-  for(int i=0;*((char*)datastr+i)!='\0' && i<tamano;i++){
-    cadena[i]=(char *)(datastr+pos+i);
+
+  if (politica==1){//prioridad lectores
+
+    cout<<"Entre a la politica 1 de readDatastr"<<endl;
+    sem_wait(&(*(workload+1)));
+    cuentalect++;
+    if (cuentalect == 1){
+      sem_wait(&(*(workload)));
+      sem_post(&(*(workload+1)));
+      for(int i=0;*((char*)datastr+i)!='\0' && i<tamano;i++){
+        cadena[i]=(char *)(datastr+pos+i);
+      }
+      sem_wait(&(*(workload+1)));
+      cuentalect--;
+    }
+    if (cuentalect == 0){
+      sem_post(&(*(workload)));
+      sem_post(&(*(workload+1)));
+    }
+  }else if(politica==2){//prioridad escritores
+
+    cout<<"Entre a la politica 2 de readDatastr"<<endl;
+    sem_wait (&(*(workload+5)));
+    sem_wait (&(*(workload+3)));
+    sem_wait (&(*(workload+6)));
+    cuentalect2++;
+    if (cuentalect2 == 1){
+      sem_wait (&(*(workload+4)));
+      sem_post (&(*(workload+6)));
+      sem_post (&(*(workload+3)));
+      sem_post (&(*(workload+5)));
+      for(int i=0;*((char*)datastr+i)!='\0' && i<tamano;i++){
+        cadena[i]=(char *)(datastr+pos+i);
+      }
+
+      sem_wait (&(*(workload+6)));
+      cuentalect2 --;
+    }
+    if (cuentalect2 == 0){
+      sem_post (&(*(workload+4)));
+      sem_post (&(*(workload+6)));
+    }
+
+  }else if(politica==3){
+    sem_wait(&(*(workload+7)));
+    cout<<"Entre a la politica 3 readDatastr"<<endl;
+    for(int i=0;*((char*)datastr+i)!='\0' && i<tamano;i++){
+      cadena[i]=(char *)(datastr+pos+i);
+    }
+    sem_post(&(*(workload+7)));
+
+  }else if(politica==4){
+
+    cout<<"Entre a la politica 4 readDatastr"<<endl;
+    for(int i=0;*((char*)datastr+i)!='\0' && i<tamano;i++){
+      cadena[i]=(char *)(datastr+pos+i);
+    }
   }
   return *cadena;
 }
 
-int Interpreter::readDatanum(int *datanum, int pos){
-  return *(datanum+pos);
-}
+int Interpreter::readDatanum(int *datanum, int pos,int politica){
+  int valorRetornar;
+  if (politica==1){//prioridad lectores
 
-void Interpreter::writeDatastr(char *datastr, int pos, char* data){
-  for(int i=0; i<strlen(data); i++){
-    *(datastr + pos + i) = (char)data[i];
+    cout<<"Entre a la politica 1 de readDatanum"<<endl;
+    sem_wait(&(*(workload+1)));
+    cuentalect++;
+    if (cuentalect == 1){
+      sem_wait(&(*(workload)));
+      sem_post(&(*(workload+1)));
+      valorRetornar= *(datanum+pos);
+      sem_wait(&(*(workload+1)));
+      cuentalect--;
+    }
+    if (cuentalect == 0){
+      sem_post(&(*(workload)));
+      sem_post(&(*(workload+1)));
+    }
+  }else if(politica==2){//prioridad escritores
+
+    cout<<"Entre a la politica 2 de readDatanum"<<endl;
+    sem_wait (&(*(workload+5)));
+    sem_wait (&(*(workload+3)));
+    sem_wait (&(*(workload+6)));
+    cuentalect2++;
+    if (cuentalect2 == 1){
+      sem_wait (&(*(workload+4)));
+      sem_post (&(*(workload+6)));
+      sem_post (&(*(workload+3)));
+      sem_post (&(*(workload+5)));
+      valorRetornar= *(datanum+pos);
+      sem_wait (&(*(workload+6)));
+      cuentalect2 --;
+    }
+    if (cuentalect2 == 0){
+      sem_post (&(*(workload+4)));
+      sem_post (&(*(workload+6)));
+    }
+
+  }else if(politica==3){
+    sem_wait(&(*(workload+7)));
+    cout<<"Entre a la politica 3 readDatanum"<<endl;
+    valorRetornar= *(datanum+pos);
+    sem_post(&(*(workload+7)));
+    return valorRetornar;
+  }else if(politica==4){
+    return *(datanum+pos);
   }
-  *(datastr + pos + strlen(data)) = '\0';
+  return valorRetornar;
 }
 
-void Interpreter::writeDatanum(int *datanum, int pos, int data){
-  *(datanum + pos) = data;
+void Interpreter::writeDatastr(char *datastr, int pos, char* data,int politica){
+
+  if(politica==1){
+    // prioridad lectores
+    sem_wait(&(*workload));
+    cout<<"Entre a la politica 1 writeDatastr "<<endl;
+    for(int i=0; i<strlen(data); i++){
+      *(datastr + pos + i) = (char)data[i];
+    }
+    *(datastr + pos + strlen(data)) = '\0';
+    //sleep(1000);
+    sem_post(&(*workload));
+  }else if(politica==2){//prioridad escritores
+    sem_wait (&(*(workload+2)));
+    cout<<"Entre a la politica 2 writeDatastr "<<endl;
+    cuentaescr++;
+    if (cuentaescr == 1){
+      sem_wait(&(*(workload+3)) );
+      sem_post (&(*(workload+2)));
+      sem_wait (&(*(workload+4)));
+      for(int i=0; i<strlen(data); i++){
+        *(datastr + pos + i) = (char)data[i];
+      }
+      *(datastr + pos + strlen(data)) = '\0';
+      sem_post (&(*(workload+4)) );
+      sem_wait (&(*(workload+2)));
+      cuentaescr--;
+    }
+    if (cuentaescr == 0){
+      sem_post (&(*(workload+3)));
+      sem_post(&(*(workload+2)));
+    }
+  }else if(politica==3){//Bloqueo
+    sem_wait(&(*(workload+7)));
+    cout<<"Entre a la politica 3 writeDatastr"<<endl;
+    for(int i=0; i<strlen(data); i++){
+      *(datastr + pos + i) = (char)data[i];
+    }
+    *(datastr + pos + strlen(data)) = '\0';
+    sem_post(&(*(workload+7)));
+  }  else if (politica==4){
+    cout<<"Entre a la politica 4 writeDatastr"<<endl;
+    for(int i=0; i<strlen(data); i++){
+      *(datastr + pos + i) = (char)data[i];
+    }
+    *(datastr + pos + strlen(data)) = '\0';
+  }else{
+    cout<<"Error de segmento en writeDatastr"<<endl;
+    for(int i=0; i<strlen(data); i++){
+      *(datastr + pos + i) = (char)data[i];
+    }
+    *(datastr + pos + strlen(data)) = '\0';
+  }
+
+
+}
+
+void Interpreter::writeDatanum(int *datanum, int pos, int data,int politica){
+  if(politica==1){
+    // prioridad lectores
+    sem_wait(&(*workload));
+    cout<<"Entre a la politica 1 writeDatanum"<<endl;
+    *(datanum + pos) = data;
+    //sleep(1000);
+    sem_post(&(*workload));
+  }else if(politica==2){//prioridad escritores
+    sem_wait (&(*(workload+2)));
+    cout<<"Entre a la politica 2 writeDatanum"<<endl;
+    cuentaescr++;
+    if (cuentaescr == 1){
+      sem_wait(&(*(workload+3)) );
+      sem_post (&(*(workload+2)));
+      sem_wait (&(*(workload+4)));
+      *(datanum + pos) = data;
+      sem_post (&(*(workload+4)) );
+      sem_wait (&(*(workload+2)));
+      cuentaescr--;
+    }
+
+    if (cuentaescr == 0){
+      sem_post (&(*(workload+3)));
+      sem_post(&(*(workload+2)));
+    }
+
+  }else if(politica==3){//Bloqueo
+    sem_wait(&(*(workload+7)));
+    cout<<"Entre a la politica 3 writeDatanum"<<endl;
+    *(datanum + pos) = data;
+    sem_post(&(*(workload+7)));
+  }  else if(politica==4){
+
+    cout<<"Entre a la politica 4 writeDatanum"<<endl;
+    *(datanum + pos) = data;
+  }else{
+    cout<<"Error en segmento writeDatastr"<<endl;
+  }
+
 }
 
 int Interpreter::interprete(int opcode, string value,int pc){
@@ -89,16 +295,6 @@ int Interpreter::interprete(int opcode, string value,int pc){
   unsigned int poslitstr,posdatastr;
   unsigned int trans;
   unsigned int op,enteroDes;
-
-  int politica = *(memg+6);
-  int inicio = politica>>16;
-  int fin = politica&65535;
-  int nroLineas = fin-inicio;
-
-  int posPolitica = *(memg+inicio);
-  int segmento=posPolitica>>31;
-  int num=(posPolitica>>16)&32767;
-  int num1=posPolitica&32767;
 
   switch(opcode) {
     case 0:{
@@ -112,11 +308,17 @@ int Interpreter::interprete(int opcode, string value,int pc){
       cout << "Es: "<< readLitnum(litnum,poslitnum) <<endl;
       int readValue = readLitnum(litnum,poslitnum);
       cout << "datanum: " << datanum+memref << " - " << datanum << endl;
-      // Falta bandera de si tiene politica o no.
-      if((datanum+memref)>=datanum+num || (datanum+memref)<=datanum+num1){
-        writeDatanum(datanum, memref, readValue);
+
+      if((inicio[0]-fin[0]!=0) && (memref>=inicioLineas[0] && memref<=finLineas[0])){
+        writeDatanum(datanum, memref, readValue,1);
+      }else if ((inicio[1]-fin[1]!=0) && (memref>=inicioLineas[2] && memref<=finLineas[2])){
+        writeDatanum(datanum, memref, readValue,2);
+      }else if ((inicio[2]-fin[2]!=0) && (memref>=inicioLineas[4] && memref<=finLineas[4])){
+        writeDatanum(datanum, memref, readValue,3);
+      }else if ((inicio[3]-fin[3]!=0) && (memref>=inicioLineas[6] && memref<=finLineas[6])){
+        writeDatanum(datanum, memref, readValue,4);
       }else{
-        writeDatanum(datanum, memref, readValue);
+        cout<<"Error de segmento"<<endl;
       }
 
       return pc;
@@ -130,7 +332,19 @@ int Interpreter::interprete(int opcode, string value,int pc){
       cout <<"litstr: "<< poslitstr<<endl;
       char* readValue = readLitstr(litstr,poslitstr,10);
       //cout<<"salida de readvalue: "<<readValue<<endl;
-      writeDatastr(datastr, memref, readValue);
+      //writeDatastr(datastr, memref, readValue,-1);
+
+      if((inicio[0]-fin[0]!=0) && (memref>=inicioLineas[1] && memref<=finLineas[1])){
+        writeDatastr(datastr, memref, readValue,1);
+      }else if ((inicio[1]-fin[1]!=0) && (memref>=inicioLineas[3] && memref<=finLineas[3])){
+        writeDatastr(datastr, memref, readValue,2);
+      }else if ((inicio[2]-fin[2]!=0) && (memref>=inicioLineas[5] && memref<=finLineas[5])){
+        writeDatastr(datastr, memref, readValue,3);
+      }else if ((inicio[3]-fin[3]!=0) && (memref>=inicioLineas[7] && memref<=finLineas[7])){
+        writeDatastr(datastr, memref, readValue,4);
+      }else{
+        cout<<"Error de segmento"<<endl;
+      }
 
       return pc;
     }
@@ -142,8 +356,18 @@ int Interpreter::interprete(int opcode, string value,int pc){
       poslitnum=((stoi(value.substr(4,5),0,16))&131068)>>2;
       cout <<"litnum: "<< poslitnum<<endl;
       int readValue = readLitnum(litnum,poslitnum);
-      writeDatanum(datanum,memref,(readValue+pc));
-
+      //writeDatanum(datanum,memref,(readValue+pc),-1);
+      if((inicio[0]-fin[0]!=0) && (memref>=inicioLineas[0] && memref<=finLineas[0])){
+        writeDatanum(datanum, memref, readValue,1);
+      }else if ((inicio[1]-fin[1]!=0) && (memref>=inicioLineas[2] && memref<=finLineas[2])){
+        writeDatanum(datanum, memref, readValue,2);
+      }else if ((inicio[2]-fin[2]!=0) && (memref>=inicioLineas[4] && memref<=finLineas[4])){
+        writeDatanum(datanum, memref, readValue,3);
+      }else if ((inicio[3]-fin[3]!=0) && (memref>=inicioLineas[6] && memref<=finLineas[6])){
+        writeDatanum(datanum, memref, readValue,4);
+      }else{
+        cout<<"Error de segmento"<<endl;
+      }
       return pc;
     }
     case 3:{
@@ -151,8 +375,19 @@ int Interpreter::interprete(int opcode, string value,int pc){
       cout << "Opcode: "<<opcode<<endl;
       memref=(stoi(value.substr(1,4),0,16))>>1;
       cout<<"memref: "<< memref<<endl;
-      int readValue = readDatanum(datanum,memref);
-
+      //int readValue = readDatanum(datanum,memref,-1);
+      int readValue;
+      if((inicio[0]-fin[0]!=0) && (memref>=inicioLineas[0] && memref<=finLineas[0])){
+        readValue = readDatanum(datanum,memref,1);
+      }else if ((inicio[1]-fin[1]!=0) && (memref>=inicioLineas[2] && memref<=finLineas[2])){
+        readValue = readDatanum(datanum,memref,2);
+      }else if ((inicio[2]-fin[2]!=0) && (memref>=inicioLineas[4] && memref<=finLineas[4])){
+        readValue = readDatanum(datanum,memref,3);
+      }else if ((inicio[3]-fin[3]!=0) && (memref>=inicioLineas[6] && memref<=finLineas[6])){
+        readValue = readDatanum(datanum,memref,4);
+      }else{
+        cout<<"Error de segmento"<<endl;
+      }
       return (readValue-1);
     }
     case 4:{
@@ -165,13 +400,60 @@ int Interpreter::interprete(int opcode, string value,int pc){
       if (trans){
           posdatanum=(stoi(value.substr(5,4),0,16)>>1);
           cout <<"litnum: "<< posdatanum<<endl;
-          int readValue = readDatanum(datanum,posdatanum);
-          writeDatanum(datanum,memref,readValue);
+          //int readValue = readDatanum(datanum,posdatanum,-1);
+          int readValue;
+          if((inicio[0]-fin[0]!=0) && (posdatanum>=inicioLineas[0] && posdatanum<=finLineas[0])){
+            readValue = readDatanum(datanum,posdatanum,1);
+          }else if ((inicio[1]-fin[1]!=0) && (posdatanum>=inicioLineas[2] && posdatanum<=finLineas[2])){
+            readValue = readDatanum(datanum,posdatanum,2);
+          }else if ((inicio[2]-fin[2]!=0) && (posdatanum>=inicioLineas[4] && posdatanum<=finLineas[4])){
+            readValue = readDatanum(datanum,posdatanum,3);
+          }else if ((inicio[3]-fin[3]!=0) && (posdatanum>=inicioLineas[6] && posdatanum<=finLineas[6])){
+            readValue = readDatanum(datanum,posdatanum,4);
+          }else{
+            cout<<"Error de segmento"<<endl;
+          }
+
+          //writeDatanum(datanum,memref,readValue,-1);
+          if((inicio[0]-fin[0]!=0) && (memref>=inicioLineas[0] && memref<=finLineas[0])){
+            writeDatanum(datanum, memref, readValue,1);
+          }else if ((inicio[1]-fin[1]!=0) && (memref>=inicioLineas[2] && memref<=finLineas[2])){
+            writeDatanum(datanum, memref, readValue,2);
+          }else if ((inicio[2]-fin[2]!=0) && (memref>=inicioLineas[4] && memref<=finLineas[4])){
+            writeDatanum(datanum, memref, readValue,3);
+          }else if ((inicio[3]-fin[3]!=0) && (memref>=inicioLineas[6] && memref<=finLineas[6])){
+            writeDatanum(datanum, memref, readValue,4);
+          }else{
+            cout<<"Error de segmento"<<endl;
+          }
       }else{
           posdatastr=(stoi(value.substr(5,4),0,16)>>1);
           cout <<"litstr: "<< posdatastr<<endl;
-          char* readValue = readDatastr(datastr,posdatastr,128);
-          writeDatastr(datastr,memref,readValue);
+          //char* readValue = readDatastr(datastr,posdatastr,128,-1);
+          char* readValue;
+          if((inicio[0]-fin[0]!=0) && (posdatastr>=inicioLineas[0] && posdatastr<=finLineas[0])){
+            readValue = readDatastr(datastr,posdatastr,128,1);
+          }else if ((inicio[1]-fin[1]!=0) && (posdatastr>=inicioLineas[2] && posdatastr<=finLineas[2])){
+            readValue = readDatastr(datastr,posdatastr,128,2);
+          }else if ((inicio[2]-fin[2]!=0) && (posdatastr>=inicioLineas[4] && posdatastr<=finLineas[4])){
+            readValue = readDatastr(datastr,posdatastr,128,3);
+          }else if ((inicio[3]-fin[3]!=0) && (posdatastr>=inicioLineas[6] && posdatastr<=finLineas[6])){
+            readValue = readDatastr(datastr,posdatastr,128,4);
+          }else{
+            cout<<"Error de segmento"<<endl;
+          }
+          //writeDatastr(datastr,memref,readValue,-1);
+          if((inicio[0]-fin[0]!=0) && (memref>=inicioLineas[1] && memref<=finLineas[1])){
+            writeDatastr(datastr, memref, readValue,1);
+          }else if ((inicio[1]-fin[1]!=0) && (memref>=inicioLineas[3] && memref<=finLineas[3])){
+            writeDatastr(datastr, memref, readValue,2);
+          }else if ((inicio[2]-fin[2]!=0) && (memref>=inicioLineas[5] && memref<=finLineas[5])){
+            writeDatastr(datastr, memref, readValue,3);
+          }else if ((inicio[3]-fin[3]!=0) && (memref>=inicioLineas[7] && memref<=finLineas[7])){
+            writeDatastr(datastr, memref, readValue,4);
+          }else{
+            cout<<"Error de segmento"<<endl;
+          }
       }
       return pc;
     }
@@ -189,46 +471,110 @@ int Interpreter::interprete(int opcode, string value,int pc){
       cout<<"memref1: "<< memref1<<endl;
       cout<<"memref2: "<< memref2<<endl;
       if (trans){
+          int result;
+          //int readValue1 = readDatanum(datanum,memref1,-1);
+          int readValue1;
+          if((inicio[0]-fin[0]!=0) && (memref1>=inicioLineas[0] && memref1<=finLineas[0])){
+            readValue1 = readDatanum(datanum,memref1,1);
+          }else if ((inicio[1]-fin[1]!=0) && (memref1>=inicioLineas[2] && memref1<=finLineas[2])){
+            readValue1 = readDatanum(datanum,memref1,2);
+          }else if ((inicio[2]-fin[2]!=0) && (memref1>=inicioLineas[4] && memref1<=finLineas[4])){
+            readValue1 = readDatanum(datanum,memref1,3);
+          }else if ((inicio[3]-fin[3]!=0) && (memref1>=inicioLineas[6] && memref1<=finLineas[6])){
+            readValue1 = readDatanum(datanum,memref1,4);
+          }else{
+            cout<<"Error de segmento"<<endl;
+          }
+          //int readValue2 = readDatanum(datanum,memref2,-1);
+          int readValue2;
+          if((inicio[0]-fin[0]!=0) && (memref2>=inicioLineas[0] && memref2<=finLineas[0])){
+            readValue1 = readDatanum(datanum,memref2,1);
+          }else if ((inicio[1]-fin[1]!=0) && (memref2>=inicioLineas[2] && memref2<=finLineas[2])){
+            readValue1 = readDatanum(datanum,memref2,2);
+          }else if ((inicio[2]-fin[2]!=0) && (memref2>=inicioLineas[4] && memref2<=finLineas[4])){
+            readValue1 = readDatanum(datanum,memref2,3);
+          }else if ((inicio[3]-fin[3]!=0) && (memref2>=inicioLineas[6] && memref2<=finLineas[6])){
+            readValue1 = readDatanum(datanum,memref2,4);
+          }else{
+            cout<<"Error de segmento"<<endl;
+          }
         if(op==0){
-          int readValue1 = readDatanum(datanum,memref1);
-          int readValue2 = readDatanum(datanum,memref2);
-          int result= readValue1+readValue2;
-          writeDatanum(datanum,memref,result);
+          //int readValue1 = readDatanum(datanum,memref1,-1);
+          //int readValue2 = readDatanum(datanum,memref2,-1);
+          result= readValue1+readValue2;
+          //writeDatanum(datanum,memref,result,-1);
         }else if(op==1){
-          int readValue1 = readDatanum(datanum,memref1);
-          int readValue2 = readDatanum(datanum,memref2);
-          int result= readValue1-readValue2;
-          writeDatanum(datanum,memref,result);
+          // int readValue1 = readDatanum(datanum,memref1,-1);
+          // int readValue2 = readDatanum(datanum,memref2,-1);
+          result= readValue1-readValue2;
+          //writeDatanum(datanum,memref,result,-1);
 
         }else if(op==2){
-          int readValue1 = readDatanum(datanum,memref1);
-          int readValue2 = readDatanum(datanum,memref2);
-          int result= readValue1*readValue2;
-          writeDatanum(datanum,memref,result);
+          // int readValue1 = readDatanum(datanum,memref1,-1);
+          // int readValue2 = readDatanum(datanum,memref2,-1);
+          result= readValue1*readValue2;
+          //writeDatanum(datanum,memref,result,-1);
 
         }else if(op==3){
-          int readValue1 = readDatanum(datanum,memref1);
-          int readValue2 = readDatanum(datanum,memref2);
-          int result= readValue1/readValue2;
-          writeDatanum(datanum,memref,result);
+          // int readValue1 = readDatanum(datanum,memref1,-1);
+          // int readValue2 = readDatanum(datanum,memref2,-1);
+          result= readValue1/readValue2;
+          //writeDatanum(datanum,memref,result,-1);
 
         }else if(op==4){
-          int readValue1 = readDatanum(datanum,memref1);
-          int readValue2 = readDatanum(datanum,memref2);
-          int result= readValue1%readValue2;
-          writeDatanum(datanum,memref,result);
+          //int readValue1 = readDatanum(datanum,memref1,-1);
+          //int readValue2 = readDatanum(datanum,memref2,-1);
+          result= readValue1%readValue2;
+          //writeDatanum(datanum,memref,result,-1);
 
+        }
+        //writeDatanum(datanum,memref,result,-1);
+        if((inicio[0]-fin[0]!=0) && (memref>=inicioLineas[0] && memref<=finLineas[0])){
+          writeDatanum(datanum, memref, result,1);
+        }else if ((inicio[1]-fin[1]!=0) && (memref>=inicioLineas[2] && memref<=finLineas[2])){
+          writeDatanum(datanum, memref, result,2);
+        }else if ((inicio[2]-fin[2]!=0) && (memref>=inicioLineas[4] && memref<=finLineas[4])){
+          writeDatanum(datanum, memref, result,3);
+        }else if ((inicio[3]-fin[3]!=0) && (memref>=inicioLineas[6] && memref<=finLineas[6])){
+          writeDatanum(datanum, memref, result,4);
+        }else{
+          cout<<"Error de segmento"<<endl;
         }
 
       }else{
+        char* readValue1;// = readDatastr(datastr,memref1,128,-1);
+        if((inicio[0]-fin[0]!=0) && (memref1>=inicioLineas[1] && memref1<=finLineas[1])){
+          readValue1 = readDatastr(datastr,memref1,128,1);
+        }else if ((inicio[1]-fin[1]!=0) && (memref1>=inicioLineas[3] && memref1<=finLineas[3])){
+          readValue1 = readDatastr(datastr,memref1,128,2);
+        }else if ((inicio[2]-fin[2]!=0) && (memref1>=inicioLineas[5] && memref1<=finLineas[5])){
+          readValue1 = readDatastr(datastr,memref1,128,3);
+        }else if ((inicio[3]-fin[3]!=0) && (memref1>=inicioLineas[7] && memref1<=finLineas[7])){
+          readValue1 = readDatastr(datastr,memref1,128,4);
+        }else{
+          cout<<"Error de segmento"<<endl;
+        }
+        //char* readValue2 = readDatastr(datastr,memref2,128,-1);
+        char* readValue2;
+        if((inicio[0]-fin[0]!=0) && (memref2>=inicioLineas[1] && memref2<=finLineas[1])){
+          readValue2 = readDatastr(datastr,memref2,128,1);
+        }else if ((inicio[1]-fin[1]!=0) && (memref2>=inicioLineas[3] && memref2<=finLineas[3])){
+          readValue2 = readDatastr(datastr,memref2,128,2);
+        }else if ((inicio[2]-fin[2]!=0) && (memref2>=inicioLineas[5] && memref2<=finLineas[5])){
+          readValue2 = readDatastr(datastr,memref2,128,3);
+        }else if ((inicio[3]-fin[3]!=0) && (memref2>=inicioLineas[7] && memref2<=finLineas[7])){
+          readValue2 = readDatastr(datastr,memref2,128,4);
+        }else{
+          cout<<"Error de segmento"<<endl;
+        }
+        string cadena= (string)(readValue1);
+        string cadena1= (string)(readValue2);
+        string mayor;
+        string result;
+        int longitud;
+        char* result2;
+
         if (op==0){
-          char* readValue1 = readDatastr(datastr,memref1,128);
-          char* readValue2 = readDatastr(datastr,memref2,128);
-          string cadena= (string)(readValue1);
-          string cadena1= (string)(readValue2);
-          string mayor;
-          string result;
-          int longitud;
           if (cadena.size()<cadena1.size()){
             longitud=cadena.size();
             mayor=cadena1;
@@ -243,16 +589,10 @@ int Interpreter::interprete(int opcode, string value,int pc){
             result+= a;
           }
           result.append(mayor,longitud,mayor.size()-longitud);
-          char* result2= (char*)result.c_str();
-          writeDatastr(datastr,memref,result2);
+          result2= (char*)result.c_str();
+          //writeDatastr(datastr,memref,result2,-1  );
+
         }else if(op==1){
-          char* readValue1 = readDatastr(datastr,memref1,128);
-          char* readValue2 = readDatastr(datastr,memref2,128);
-          string cadena= (string)(readValue1);
-          string cadena1= (string)(readValue2);
-          string mayor;
-          string result;
-          int longitud;
           if (cadena.size()<cadena1.size()){
             longitud=cadena.size();
             mayor=cadena1;
@@ -270,17 +610,10 @@ int Interpreter::interprete(int opcode, string value,int pc){
             result+= a;
           }
           result.append(mayor,longitud,mayor.size()-longitud);
-          char* result2= (char*)result.c_str();
-          writeDatastr(datastr,memref,result2);
+          result2= (char*)result.c_str();
+          //writeDatastr(datastr,memref,result2,-1);
 
         }else if(op==2){
-          char* readValue1 = readDatastr(datastr,memref1,128);
-          char* readValue2 = readDatastr(datastr,memref2,128);
-          string cadena= (string)(readValue1);
-          string cadena1= (string)(readValue2);
-          string mayor;
-          string result;
-          int longitud;
           if (cadena.size()<cadena1.size()){
             longitud=cadena.size();
             mayor=cadena1;
@@ -295,17 +628,10 @@ int Interpreter::interprete(int opcode, string value,int pc){
             result+= a;
           }
           result.append(mayor,longitud,mayor.size()-longitud);
-          char* result2= (char*)result.c_str();
-          writeDatastr(datastr,memref,result2);
+          result2= (char*)result.c_str();
+          //writeDatastr(datastr,memref,result2,-1);
 
         }else if(op==3){
-          char* readValue1 = readDatastr(datastr,memref1,128);
-          char* readValue2 = readDatastr(datastr,memref2,128);
-          string cadena= (string)(readValue1);
-          string cadena1= (string)(readValue2);
-          string mayor;
-          string result;
-          int longitud;
           if (cadena.size()<cadena1.size()){
             longitud=cadena.size();
             mayor=cadena1;
@@ -320,17 +646,10 @@ int Interpreter::interprete(int opcode, string value,int pc){
             result+= a;
           }
           result.append(mayor,longitud,mayor.size()-longitud);
-          char* result2= (char*)result.c_str();
-          writeDatastr(datastr,memref,result2);
+          result2= (char*)result.c_str();
+          //writeDatastr(datastr,memref,result2,-1);
 
         }else if(op==4){
-          char* readValue1 = readDatastr(datastr,memref1,128);
-          char* readValue2 = readDatastr(datastr,memref2,128);
-          string cadena= (string)(readValue1);
-          string cadena1= (string)(readValue2);
-          string mayor;
-          string result;
-          int longitud;
           if (cadena.size()<cadena1.size()){
             longitud=cadena.size();
             mayor=cadena1;
@@ -345,15 +664,26 @@ int Interpreter::interprete(int opcode, string value,int pc){
             result+= a;
           }
           result.append(mayor,longitud,mayor.size()-longitud);
-          char* result2= (char*)result.c_str();
-          writeDatastr(datastr,memref,result2);
+          result2= (char*)result.c_str();
+          //writeDatastr(datastr,memref,result2,-1);
 
 
+        }
+      //writeDatastr(datastr,memref,result2,-1);
+        if((inicio[0]-fin[0]!=0) && (memref>=inicioLineas[1] && memref<=finLineas[1])){
+          writeDatastr(datastr,memref,result2,1);
+        }else if ((inicio[1]-fin[1]!=0) && (memref>=inicioLineas[3] && memref<=finLineas[3])){
+          writeDatastr(datastr,memref,result2,2);
+        }else if ((inicio[2]-fin[2]!=0) && (memref>=inicioLineas[5] && memref<=finLineas[5])){
+          writeDatastr(datastr,memref,result2,3);
+        }else if ((inicio[3]-fin[3]!=0) && (memref>=inicioLineas[7] && memref<=finLineas[7])){
+          writeDatastr(datastr,memref,result2,4);
+        }else{
+          cout<<"Error de segmento"<<endl;
         }
       }
       return pc;
     }
-
     case 6:{
       cout << "Value: "<< value<<endl;
       cout << "Opcode: "<<opcode<<endl;
@@ -367,15 +697,63 @@ int Interpreter::interprete(int opcode, string value,int pc){
           enteroDes=(stoi(value.substr(8,5),0,16)&131068);
 
           int readValue=readLitnum(litnum,enteroDes);
-          int readValue2= readDatanum(datanum,readValue+posdatanum);
-          writeDatanum(datanum,memref,readValue2);
+          int readValue2;//= readDatanum(datanum,readValue+posdatanum,-1);
+
+          if((inicio[0]-fin[0]!=0) && (readValue+posdatanum>=inicioLineas[0] && readValue+posdatanum<=finLineas[0])){
+            readValue2 = readDatanum(datanum,readValue+posdatanum,1);
+          }else if ((inicio[1]-fin[1]!=0) && (readValue+posdatanum>=inicioLineas[2] && readValue+posdatanum<=finLineas[2])){
+            readValue2 = readDatanum(datanum,readValue+posdatanum,2);
+          }else if ((inicio[2]-fin[2]!=0) && (readValue+posdatanum>=inicioLineas[4] && readValue+posdatanum<=finLineas[4])){
+            readValue2 = readDatanum(datanum,readValue+posdatanum,3);
+          }else if ((inicio[3]-fin[3]!=0) && (readValue+posdatanum>=inicioLineas[6] && readValue+posdatanum<=finLineas[6])){
+            readValue2 = readDatanum(datanum,readValue+posdatanum,4);
+          }else{
+            cout<<"Error de segmento"<<endl;
+          }
+
+          //writeDatanum(datanum,memref,readValue2,-1);
+          if((inicio[0]-fin[0]!=0) && (memref>=inicioLineas[0] && memref<=finLineas[0])){
+            writeDatanum(datanum, memref, readValue2,1);
+          }else if ((inicio[1]-fin[1]!=0) && (memref>=inicioLineas[2] && memref<=finLineas[2])){
+            writeDatanum(datanum, memref, readValue2,2);
+          }else if ((inicio[2]-fin[2]!=0) && (memref>=inicioLineas[4] && memref<=finLineas[4])){
+            writeDatanum(datanum, memref, readValue2,3);
+          }else if ((inicio[3]-fin[3]!=0) && (memref>=inicioLineas[6] && memref<=finLineas[6])){
+            writeDatanum(datanum, memref, readValue2,4);
+          }else{
+            cout<<"Error de segmento"<<endl;
+          }
       }else{
           posdatastr=(stoi(value.substr(5,4),0,16)>>1);
           cout <<"litstr: "<< posdatastr<<endl;
           enteroDes=(stoi(value.substr(8,5),0,16)&131068);
           int readValue=readLitnum(litnum,enteroDes);
-          char* readValue2 = readDatastr(datastr,posdatastr+readValue,128);
-          writeDatastr(datastr,memref,readValue2);
+          char* readValue2;// = readDatastr(datastr,posdatastr+readValue,128,-1);
+
+          if((inicio[0]-fin[0]!=0) && (posdatastr+readValue>=inicioLineas[1] && posdatastr+readValue<=finLineas[1])){
+            readValue2 = readDatastr(datastr,posdatastr+readValue,128,1);
+          }else if ((inicio[1]-fin[1]!=0) && (posdatastr+readValue>=inicioLineas[3] && posdatastr+readValue<=finLineas[3])){
+            readValue2 = readDatastr(datastr,posdatastr+readValue,128,2);
+          }else if ((inicio[2]-fin[2]!=0) && (posdatastr+readValue>=inicioLineas[5] && posdatastr+readValue<=finLineas[5])){
+            readValue2 = readDatastr(datastr,posdatastr+readValue,128,3);
+          }else if ((inicio[3]-fin[3]!=0) && (posdatastr+readValue>=inicioLineas[7] && posdatastr+readValue<=finLineas[7])){
+            readValue2 = readDatastr(datastr,posdatastr+readValue,128,4);
+          }else{
+            cout<<"Error de segmento"<<endl;
+          }
+
+          //writeDatastr(datastr,memref,readValue2,-1);
+          if((inicio[0]-fin[0]!=0) && (memref>=inicioLineas[1] && memref<=finLineas[1])){
+            writeDatastr(datastr,memref,readValue2,1);
+          }else if ((inicio[1]-fin[1]!=0) && (memref>=inicioLineas[3] && memref<=finLineas[3])){
+            writeDatastr(datastr,memref,readValue2,2);
+          }else if ((inicio[2]-fin[2]!=0) && (memref>=inicioLineas[5] && memref<=finLineas[5])){
+            writeDatastr(datastr,memref,readValue2,3);
+          }else if ((inicio[3]-fin[3]!=0) && (memref>=inicioLineas[7] && memref<=finLineas[7])){
+            writeDatastr(datastr,memref,readValue2,4);
+          }else{
+            cout<<"Error de segmento"<<endl;
+          }
       }
       return pc;
     }
@@ -391,15 +769,64 @@ int Interpreter::interprete(int opcode, string value,int pc){
           posdatanum=(stoi(value.substr(8,5),0,16)&131068);
           cout <<"litnum: "<< posdatanum<<endl;
           int readValue=readLitnum(litnum,enteroDes);
-          int readValue2=readDatanum(datanum,posdatanum);
-          writeDatanum(datanum,memref+readValue,readValue2);
+          //int readValue2=readDatanum(datanum,posdatanum,-1);
+
+          int readValue2;//= readDatanum(datanum,readValue+posdatanum,-1);
+
+          if((inicio[0]-fin[0]!=0) && (posdatanum>=inicioLineas[0] && posdatanum<=finLineas[0])){
+            readValue2 = readDatanum(datanum,posdatanum,1);
+          }else if ((inicio[1]-fin[1]!=0) && (posdatanum>=inicioLineas[2] && posdatanum<=finLineas[2])){
+            readValue2 = readDatanum(datanum,posdatanum,2);
+          }else if ((inicio[2]-fin[2]!=0) && (posdatanum>=inicioLineas[4] && posdatanum<=finLineas[4])){
+            readValue2 = readDatanum(datanum,posdatanum,3);
+          }else if ((inicio[3]-fin[3]!=0) && (posdatanum>=inicioLineas[6] && posdatanum<=finLineas[6])){
+            readValue2 = readDatanum(datanum,posdatanum,4);
+          }else{
+            cout<<"Error de segmento"<<endl;
+          }
+
+          //writeDatanum(datanum,memref+readValue,readValue2,-1);
+          if((inicio[0]-fin[0]!=0) && (memref+readValue>=inicioLineas[0] && memref+readValue<=finLineas[0])){
+            writeDatanum(datanum, memref+readValue, readValue2,1);
+          }else if ((inicio[1]-fin[1]!=0) && (memref+readValue>=inicioLineas[2] && memref+readValue<=finLineas[2])){
+            writeDatanum(datanum, memref+readValue, readValue2,2);
+          }else if ((inicio[2]-fin[2]!=0) && (memref+readValue>=inicioLineas[4] && memref+readValue<=finLineas[4])){
+            writeDatanum(datanum, memref+readValue, readValue2,3);
+          }else if ((inicio[3]-fin[3]!=0) && (memref+readValue>=inicioLineas[6] && memref+readValue<=finLineas[6])){
+            writeDatanum(datanum, memref+readValue, readValue2,4);
+          }else{
+            cout<<"Error de segmento"<<endl;
+          }
       }else{
           enteroDes=(stoi(value.substr(5,4),0,16)>>1);
           posdatastr=(stoi(value.substr(8,5),0,16)&131068);
           cout <<"litstr: "<< posdatastr<<endl;
           int readValue=readLitnum(litnum,enteroDes);
-          char* readValue2 = readDatastr(datastr,posdatastr,128);
-          writeDatastr(datastr,memref+readValue,readValue2);
+          char* readValue2;// = readDatastr(datastr,posdatastr,128,-1);
+          if((inicio[0]-fin[0]!=0) && (posdatastr>=inicioLineas[1] && posdatastr<=finLineas[1])){
+            readValue2 = readDatastr(datastr,posdatastr,128,1);
+          }else if ((inicio[1]-fin[1]!=0) && (posdatastr>=inicioLineas[3] && posdatastr<=finLineas[3])){
+            readValue2 = readDatastr(datastr,posdatastr,128,2);
+          }else if ((inicio[2]-fin[2]!=0) && (posdatastr>=inicioLineas[5] && posdatastr<=finLineas[5])){
+            readValue2 = readDatastr(datastr,posdatastr,128,3);
+          }else if ((inicio[3]-fin[3]!=0) && (posdatastr>=inicioLineas[7] && posdatastr<=finLineas[7])){
+            readValue2 = readDatastr(datastr,posdatastr,128,4);
+          }else{
+            cout<<"Error de segmento"<<endl;
+          }
+
+          //writeDatastr(datastr,memref+readValue,readValue2,-1);
+          if((inicio[0]-fin[0]!=0) && (memref+readValue>=inicioLineas[1] && memref+readValue<=finLineas[1])){
+            writeDatastr(datastr,memref+readValue,readValue2,1);
+          }else if ((inicio[1]-fin[1]!=0) && (memref+readValue>=inicioLineas[3] && memref+readValue<=finLineas[3])){
+            writeDatastr(datastr,memref+readValue,readValue2,2);
+          }else if ((inicio[2]-fin[2]!=0) && (memref+readValue>=inicioLineas[5] && memref+readValue<=finLineas[5])){
+            writeDatastr(datastr,memref+readValue,readValue2,3);
+          }else if ((inicio[3]-fin[3]!=0) && (memref+readValue>=inicioLineas[7] && memref+readValue<=finLineas[7])){
+            writeDatastr(datastr,memref+readValue,readValue2,4);
+          }else{
+            cout<<"Error de segmento"<<endl;
+          }
       }
       return pc;
     }
@@ -411,7 +838,18 @@ int Interpreter::interprete(int opcode, string value,int pc){
       int readValue;
       cout<<"Ingrese un entero: ";
       cin>>readValue;
-      writeDatanum(datanum,memref,readValue);
+      //writeDatanum(datanum,memref,readValue,-1);
+      if((inicio[0]-fin[0]!=0) && (memref>=inicioLineas[0] && memref<=finLineas[0])){
+        writeDatanum(datanum, memref, readValue,1);
+      }else if ((inicio[1]-fin[1]!=0) && (memref>=inicioLineas[2] && memref<=finLineas[2])){
+        writeDatanum(datanum, memref, readValue,2);
+      }else if ((inicio[2]-fin[2]!=0) && (memref>=inicioLineas[4] && memref<=finLineas[4])){
+        writeDatanum(datanum, memref, readValue,3);
+      }else if ((inicio[3]-fin[3]!=0) && (memref>=inicioLineas[6] && memref<=finLineas[6])){
+        writeDatanum(datanum, memref, readValue,4);
+      }else{
+        cout<<"Error de segmento"<<endl;
+      }
       return pc;
     }
     case 9:{
@@ -419,8 +857,21 @@ int Interpreter::interprete(int opcode, string value,int pc){
       cout << "Opcode: "<<opcode<<endl;
       memref=(stoi(value.substr(1,4),0,16))>>1;
       cout<<"memref: "<< memref<<endl;
-      int readValue=readDatanum(datanum,memref);
+      //int readValue=readDatanum(datanum,memref,-1);
+      int readValue;
+      if((inicio[0]-fin[0]!=0) && (memref>=inicioLineas[0] && memref<=finLineas[0])){
+        readValue = readDatanum(datanum,memref,1);
+      }else if ((inicio[1]-fin[1]!=0) && (memref>=inicioLineas[2] && memref<=finLineas[2])){
+        readValue = readDatanum(datanum,memref,2);
+      }else if ((inicio[2]-fin[2]!=0) && (memref>=inicioLineas[4] && memref<=finLineas[4])){
+        readValue = readDatanum(datanum,memref,3);
+      }else if ((inicio[3]-fin[3]!=0) && (memref>=inicioLineas[6] && memref<=finLineas[6])){
+        readValue = readDatanum(datanum,memref,4);
+      }else{
+        cout<<"Error de segmento"<<endl;
+      }
       cout<<"writeInt: "<<readValue<<endl;
+
       return pc;
 
     }
@@ -442,7 +893,18 @@ int Interpreter::interprete(int opcode, string value,int pc){
         valor+=a;
       }
       char* valor2= (char* )valor.c_str();
-      writeDatastr(datastr,memref, valor2);
+      //writeDatastr(datastr,memref, valor2,-1);
+      if((inicio[0]-fin[0]!=0) && (memref>=inicioLineas[1] && memref<=finLineas[1])){
+        writeDatastr(datastr,memref,valor2,1);
+      }else if ((inicio[1]-fin[1]!=0) && (memref>=inicioLineas[3] && memref<=finLineas[3])){
+        writeDatastr(datastr,memref,valor2,2);
+      }else if ((inicio[2]-fin[2]!=0) && (memref>=inicioLineas[5] && memref<=finLineas[5])){
+        writeDatastr(datastr,memref,valor2,3);
+      }else if ((inicio[3]-fin[3]!=0) && (memref>=inicioLineas[7] && memref<=finLineas[7])){
+        writeDatastr(datastr,memref,valor2,4);
+      }else{
+        cout<<"Error de segmento"<<endl;
+      }
       return pc;
     }
     case 11:{
@@ -450,7 +912,19 @@ int Interpreter::interprete(int opcode, string value,int pc){
       cout << "Opcode: "<<opcode<<endl;
       memref=(stoi(value.substr(1,4),0,16))>>1;
       cout<<"memref: "<< memref<<endl;
-      char* readValue=readDatastr(datastr,memref,128);
+      //char* readValue=readDatastr(datastr,memref,128,-1);
+      char* readValue;// = readDatastr(datastr,memref1,128,-1);
+      if((inicio[0]-fin[0]!=0) && (memref>=inicioLineas[1] && memref<=finLineas[1])){
+        readValue = readDatastr(datastr,memref,128,1);
+      }else if ((inicio[1]-fin[1]!=0) && (memref>=inicioLineas[3] && memref<=finLineas[3])){
+        readValue = readDatastr(datastr,memref,128,2);
+      }else if ((inicio[2]-fin[2]!=0) && (memref>=inicioLineas[5] && memref<=finLineas[5])){
+        readValue = readDatastr(datastr,memref,128,3);
+      }else if ((inicio[3]-fin[3]!=0) && (memref>=inicioLineas[7] && memref<=finLineas[7])){
+        readValue = readDatastr(datastr,memref,128,4);
+      }else{
+        cout<<"Error de segmento"<<endl;
+      }
       cout<<"writeStr: "<<readValue<<endl;
       return pc;
     }
@@ -477,77 +951,109 @@ int Interpreter::interprete(int opcode, string value,int pc){
       cout<<"memref2: "<< memref2<<endl;
 
       if (trans){
+
+        //int readValue=readDatanum(datanum,memref,-1);
+        int readValue;
+        if((inicio[0]-fin[0]!=0) && (memref>=inicioLineas[0] && memref<=finLineas[0])){
+          readValue = readDatanum(datanum,memref,1);
+        }else if ((inicio[1]-fin[1]!=0) && (memref>=inicioLineas[2] && memref<=finLineas[2])){
+          readValue = readDatanum(datanum,memref,2);
+        }else if ((inicio[2]-fin[2]!=0) && (memref>=inicioLineas[4] && memref<=finLineas[4])){
+          readValue = readDatanum(datanum,memref,3);
+        }else if ((inicio[3]-fin[3]!=0) && (memref>=inicioLineas[6] && memref<=finLineas[6])){
+          readValue = readDatanum(datanum,memref,4);
+        }else{
+          cout<<"Error de segmento"<<endl;
+        }
+        //int readValue2=readDatanum(datanum,memref1,-1);
+        int readValue2;
+        if((inicio[0]-fin[0]!=0) && (memref1>=inicioLineas[0] && memref1<=finLineas[0])){
+          readValue2 = readDatanum(datanum,memref1,1);
+        }else if ((inicio[1]-fin[1]!=0) && (memref1>=inicioLineas[2] && memref1<=finLineas[2])){
+          readValue2 = readDatanum(datanum,memref1,2);
+        }else if ((inicio[2]-fin[2]!=0) && (memref1>=inicioLineas[4] && memref1<=finLineas[4])){
+          readValue2 = readDatanum(datanum,memref1,3);
+        }else if ((inicio[3]-fin[3]!=0) && (memref1>=inicioLineas[6] && memref1<=finLineas[6])){
+          readValue2 = readDatanum(datanum,memref1,4);
+        }else{
+          cout<<"Error de segmento"<<endl;
+        }
+
         if (op==0){//>=
-          int readValue=readDatanum(datanum,memref);
-          int readValue2=readDatanum(datanum,memref1);
           if(readValue>=readValue2){
             pc=readLitnum(litnum,memref2);
           }
         }else if(op==1){
-          int readValue=readDatanum(datanum,memref);
-          int readValue2=readDatanum(datanum,memref1);
           if(readValue>readValue2){
             pc=readLitnum(litnum,memref2);
           }
         }else if(op==2){
-          int readValue=readDatanum(datanum,memref);
-          int readValue2=readDatanum(datanum,memref1);
           if(readValue<=readValue2){
             pc=readLitnum(litnum,memref2);
           }
         }else if (op==3){
-          int readValue=readDatanum(datanum,memref);
-          int readValue2=readDatanum(datanum,memref1);
           if(readValue<readValue2){
             pc=readLitnum(litnum,memref2);
           }
         }else if(op==4){
-          int readValue=readDatanum(datanum,memref);
-          int readValue2=readDatanum(datanum,memref1);
           if(readValue==readValue2){
             pc=readLitnum(litnum,memref2);
           }
         }else if(op==5){
-          int readValue=readDatanum(datanum,memref);
-          int readValue2=readDatanum(datanum,memref1);
           if(readValue!=readValue2){
             pc=readLitnum(litnum,memref2);
           }
         }
       }else{//char* readDatastr(char *datastr, int pos, int tamano)
+
+        //char* readValue=readDatastr(datastr,memref,1,-1);
+        char* readValue;
+        if((inicio[0]-fin[0]!=0) && (memref>=inicioLineas[0] && memref<=finLineas[0])){
+          readValue = readDatastr(datastr,memref,128,1);
+        }else if ((inicio[1]-fin[1]!=0) && (memref>=inicioLineas[2] && memref<=finLineas[2])){
+          readValue = readDatastr(datastr,memref,128,2);
+        }else if ((inicio[2]-fin[2]!=0) && (memref>=inicioLineas[4] && memref<=finLineas[4])){
+          readValue = readDatastr(datastr,memref,128,3);
+        }else if ((inicio[3]-fin[3]!=0) && (memref>=inicioLineas[6] && memref<=finLineas[6])){
+          readValue = readDatastr(datastr,memref,128,4);
+        }else{
+          cout<<"Error de segmento"<<endl;
+        }
+        //char* readValue2=readDatastr(datastr,memref1,1,-1);
+        char* readValue2;
+        if((inicio[0]-fin[0]!=0) && (memref1>=inicioLineas[0] && memref1<=finLineas[0])){
+          readValue2 = readDatastr(datastr,memref1,128,1);
+        }else if ((inicio[1]-fin[1]!=0) && (memref1>=inicioLineas[2] && memref1<=finLineas[2])){
+          readValue2 = readDatastr(datastr,memref1,128,2);
+        }else if ((inicio[2]-fin[2]!=0) && (memref1>=inicioLineas[4] && memref1<=finLineas[4])){
+          readValue2 = readDatastr(datastr,memref1,128,3);
+        }else if ((inicio[3]-fin[3]!=0) && (memref1>=inicioLineas[6] && memref1<=finLineas[6])){
+          readValue2 = readDatastr(datastr,memref1,128,4);
+        }else{
+          cout<<"Error de segmento"<<endl;
+        }
+
         if (op==0){//>=
-          char* readValue=readDatastr(datastr,memref,1);
-          char* readValue2=readDatastr(datastr,memref1,1);
           if(readValue[0]>=readValue2[0]){
             pc=readLitnum(litnum,memref2);
           }
         }else if (op==1){
-          char* readValue=readDatastr(datastr,memref,1);
-          char* readValue2=readDatastr(datastr,memref1,1);
           if(readValue[0]>readValue2[0]){
             pc=readLitnum(litnum,memref2);
           }
         }else if(op==2){
-          char* readValue=readDatastr(datastr,memref,1);
-          char* readValue2=readDatastr(datastr,memref1,1);
           if(readValue[0]<=readValue2[0]){
             pc=readLitnum(litnum,memref2);
           }
         }else if (op==3){
-          char* readValue=readDatastr(datastr,memref,1);
-          char* readValue2=readDatastr(datastr,memref1,1);
           if(readValue[0]<readValue2[0]){
             pc=readLitnum(litnum,memref2);
           }
         }else if (op==4){
-          char* readValue=readDatastr(datastr,memref,1);
-          char* readValue2=readDatastr(datastr,memref1,1);
           if(readValue[0]==readValue2[0]){
             pc=readLitnum(litnum,memref2);
           }
         }else if (op==5){
-          char* readValue=readDatastr(datastr,memref,1);
-          char* readValue2=readDatastr(datastr,memref1,1);
           if(readValue[0]!=readValue2[0]){
             pc=readLitnum(litnum,memref2);
           }
@@ -682,6 +1188,51 @@ void Interpreter::proceso(string file){
         }
         pc++;
       }
+      //
+      // int politica1 = *(memg+6);
+      // int inicio1 = politica1>>16;
+      // int fin1 = politica1&65535;
+      //
+      // unsigned int posPolitica1 = *(memg+inicio1);
+      // int segmento1=posPolitica1>>31;
+      // int num=(posPolitica1>>16)&32767;
+      // int num1=posPolitica1&32767;
+
+
+      // prioridad lectores, prioridad escritores, bloqueo, libre
+      for (int i=0;i<4;i++){
+        politicas[i]=*(memg+6+i);
+        inicio[i] = politicas[i]>>16;
+        fin[i] = politicas[i]&65535;
+
+      }
+      // politicas = {*(memg+6), *(memg+7), *(memg+8), *(memg+9)};
+      // inicio = {politicas[0]>>16,politicas[1]>>16,politicas[2]>>16,politicas[3]>>16};
+      // fin = {politicas[0]&65535,politicas[1]&65535,politicas[2]&65535,politicas[3]&65535};
+      // nroLineas= {fin[0]-inicio[0],fin[1]-inicio[1],fin[2]-inicio[2],fin[3]-inicio[3]};
+
+      for (int i=0;i<8;i++){
+        inicioLineas[i]=-1;
+        finLineas[i]=-1;
+      }
+      for(int i=0; i<4; i++){
+        for(int j=inicio[i]; j<fin[i]; j++){
+          int val= *(memg+j)>>31;
+          if(val==-1){
+            inicioLineas[i*2]=(*(memg+j)>>16)&32767;
+            finLineas[i*2]=(*(memg+j))&32767;
+          }else if(val==0){
+            inicioLineas[i*2+1]=(*(memg+j)>>16)&32767;
+            finLineas[i*2+1]=(*(memg+j))&32767;
+          }
+          //cout << "inicio: " << inicioLineas[i*2] << " fin: " << finLineas[i*2+1] << endl;
+
+        }
+      }
+      for(int i=0; i<8; i++){
+        cout << "inicioLineas: " << inicioLineas[i] << " finLineas: " << finLineas[i] << endl;
+      }
+
       for(int i = 0; i < instructions.size() ; i++)
       {
         opcode = stoi(instructions[i].substr(0,1),0,16);

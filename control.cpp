@@ -69,7 +69,7 @@ char* Control::createMemory(int max, char* name){
   return pMem;
 }
 
-int Control::mainMemory(char* memoryName, string fileName){
+int Control::mainMemory(char* memoryName, string fileName, Control* c){
   ifstream archivo(fileName);
   char linea[128];
   int base[6],tamano[6],limite[6],max = 0,cont = 0;
@@ -96,7 +96,7 @@ int Control::mainMemory(char* memoryName, string fileName){
   max = limite[5];
   archivo.close();
 
-  char *pMem = (max,memoryName);
+  char *pMem = c->createMemory(max,memoryName);
   memg = (int *)pMem;
   litnum = (int *)pMem+base[1];
   litstr = (int *)pMem+base[2];
@@ -105,17 +105,27 @@ int Control::mainMemory(char* memoryName, string fileName){
   workload = (sem_t*)((int *)pMem+base[5]);
 
   // ejemplo semaforos
-  sem_t escr, mutex;
-  sem_init(&mutex,0,1);
+  sem_t escr, mutex1, mutexcescr, slect, sescr, mutex2, mutextlect, mutexB;
+  sem_init(&mutex1,0,1);
   sem_init(&escr,0,1);
+  sem_init(&mutexcescr,0,1);
+  sem_init(&slect,0,1);
+  sem_init(&sescr,0,1);
+  sem_init(&mutex2,0,1);
+  sem_init(&mutextlect,0,1);
+  sem_init(&mutexB,0,1);
+  // prioridad lectores
   *(workload) = escr;
-  *(workload+1) = mutex;
-  for(int i=0; i<100; i++){
-    sem_wait(&(*(workload+1)));
-    sem_post(&(*(workload+1)));
-  }
+  *(workload+1) = mutex1;
+  // prioridad escritores
+  *(workload+2) = mutexcescr;
+  *(workload+3) = slect;
+  *(workload+4) = sescr;
+  *(workload+5) = mutex2;
+  *(workload+6) = mutextlect;
+  *(workload+7) = mutexB;
 
-  writeMemg(string(fileName),tamano[0],memg,litnum,limite[1],litstr,limite[2]);
+  c->writeMemg(string(fileName),tamano[0],memg,litnum,limite[1],litstr,limite[2]);
 
   return 0;
 }
@@ -153,14 +163,17 @@ int main(int argc, char* argv[]){
   }
   int numArch=0;
   cout << "ingrese numero de archivos: ";
-  cin>>numArch;
+  numArch=1;
+  //cin>>numArch;
   string archivos[numArch];
-  for(int i=0; i<numArch; i++){
-    cout<<"ingrese nombre del archivo: ";
-    cin>>archivos[i];
-  }
+  // for(int i=0; i<numArch; i++){
+  //   cout<<"ingrese nombre del archivo: ";
+  //   cin>>archivos[i];
+  // }
+  archivos[0]="test.bew";
+  //archivos[1]="test.bew";
   Control* c = new Control();
-  c->mainMemory(memoryName,fileName);
+  c->mainMemory(memoryName,fileName, c);
   Interpreter* interewe = new Interpreter(c->memg, c->litnum, c->litstr, c->datanum, c->datastr, c->workload);
 
   pid_t proc;

@@ -23,7 +23,7 @@ class Control {
   Control();
   ~Control();
   void writeMemg(string nameFile,int limit, int *memg,int *litnum,int limiteNum,int *litstr,int limiteStr);
-  int mainMemory(char* memoryName, string fileName);
+  int mainMemory(char* memoryName, string fileName, Control* c);
   char* createMemory(int max, char* name);
   int *memg;
   int *litnum;
