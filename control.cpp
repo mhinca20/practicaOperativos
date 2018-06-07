@@ -105,7 +105,7 @@ int Control::mainMemory(char* memoryName, string fileName, Control* c){
   workload = (sem_t*)((int *)pMem+base[5]);
 
   // ejemplo semaforos
-  sem_t escr, mutex1, mutexcescr, slect, sescr, mutex2, mutextlect, mutexB;
+  sem_t escr, mutex1, mutexcescr, slect, sescr, mutex2, mutextlect, mutexB, mutexBImp;
   sem_init(&mutex1,0,1);
   sem_init(&escr,0,1);
   sem_init(&mutexcescr,0,1);
@@ -114,6 +114,7 @@ int Control::mainMemory(char* memoryName, string fileName, Control* c){
   sem_init(&mutex2,0,1);
   sem_init(&mutextlect,0,1);
   sem_init(&mutexB,0,1);
+  sem_init(&mutexBImp,0,1);
   // prioridad lectores
   *(workload) = escr;
   *(workload+1) = mutex1;
@@ -124,7 +125,7 @@ int Control::mainMemory(char* memoryName, string fileName, Control* c){
   *(workload+5) = mutex2;
   *(workload+6) = mutextlect;
   *(workload+7) = mutexB;
-
+  *(workload+8) = mutexBImp;
   c->writeMemg(string(fileName),tamano[0],memg,litnum,limite[1],litstr,limite[2]);
 
   return 0;
@@ -163,15 +164,17 @@ int main(int argc, char* argv[]){
   }
   int numArch=0;
   cout << "ingrese numero de archivos: ";
-  numArch=2;
-  //cin>>numArch;
+  //numArch;
+  cin>>numArch;
   string archivos[numArch];
-  // for(int i=0; i<numArch; i++){
-  //   cout<<"ingrese nombre del archivo: ";
-  //   cin>>archivos[i];
-  // }
-  archivos[0]="test2.bew";
-  archivos[1]="test2.bew";
+  for(int i=0; i<numArch; i++){
+    cout<<"ingrese nombre del archivo "<<i<<": ";
+    cin>>archivos[i];
+  }
+  // archivos[0]="test2.bew";
+  // archivos[1]="test2.bew";
+  //
+  // archivos[2]="test2.bew";
   Control* c = new Control();
   c->mainMemory(memoryName,fileName, c);
   Interpreter* interewe = new Interpreter(c->memg, c->litnum, c->litstr, c->datanum, c->datastr, c->workload);
@@ -179,7 +182,9 @@ int main(int argc, char* argv[]){
   pid_t proc[numArch];
   for(int i=0; i<numArch; i++){
     if ((proc[i] = ::fork()) == 0) {
-      cout << "---------------------------proceso " << i << endl;
+      //sem_wait(&(*(c->workload+8)));
+      //cout << "---------------------------proceso " << i << endl;
+      //sem_post(&(*(c->workload+8)));
       interewe->proceso(archivos[i]);
       _exit(EXIT_SUCCESS);
     }
