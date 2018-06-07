@@ -1,0 +1,121 @@
+ingrese numero de archivos: ---------------------------proceso 0
+---------------------------proceso 1
+Value: 0000000000000000
+Entre a la politica 1 writeDatanum
+Value: 0000200040000000
+Value: 0000000000000000
+Entre a la politica 2 writeDatanum
+Entre a la politica 1 writeDatanum
+Value: 5100040004000000
+Value: 0000200040000000
+Entre a la politica 2 de readDatanum
+Entre a la politica 2 writeDatanum
+Entre a la politica 1 de readDatanum
+Value: 5100040004000000
+Entre a la politica 3 writeDatanum------bloque: 0
+Entre a la politica 2 de readDatanum
+Bloqueo: 1
+Entre a la politica 1 de readDatanum
+Value: 90004000
+Entre a la politica 3 writeDatanum------bloque: 0
+Bloqueo: 1
+Value: 90004000
+Entre a la politica 3 readDatanum------bloque: 0
+bloque: 1
+writeInt: 2147483646
+Value: 1000000000000000
+Entre a la politica 3 writeDatastr------bloque: 0
+bloque: 1
+Value: B0000000
+Entre a la politica 3 readDatastr------bloque: 0
+Bloqueo: 1
+writeStr: Hola mundo
+Value: E0
+Pare por halt
+ingrese numero de archivos: ---------------------------proceso 0
+---------------------------proceso 1
+Value: 0000000000000000
+Entre a la politica 1 writeDatanum
+Value: 0000200040000000
+Entre a la politica 2 writeDatanum
+Value: 5100040004000000
+Entre a la politica 2 de readDatanum
+Entre a la politica 1 de readDatanum
+Entre a la politica 3 writeDatanum------bloque: 0
+Bloqueo: 1
+Value: 90004000
+Value: 0000000000000000
+Entre a la politica 3 readDatanum------bloque: 0
+Entre a la politica 1 writeDatanum
+bloque: 1
+Value: 0000200040000000
+writeInt: 2147483646
+Entre a la politica 2 writeDatanum
+Value: 1000000000000000
+Value: 5100040004000000
+Entre a la politica 3 writeDatastr------bloque: 0
+Entre a la politica 2 de readDatanum
+bloque: 1
+Entre a la politica 1 de readDatanum
+Value: B0000000
+Entre a la politica 3 writeDatanum------bloque: 0
+Bloqueo: 1
+Value: 90004000
+Entre a la politica 3 readDatanum------bloque: 0
+bloque: 1
+writeInt: 2147483646
+Value: 1000000000000000
+Entre a la politica 3 writeDatastr------bloque: 0
+bloque: 1
+Value: B0000000
+Entre a la politica 3 readDatastr------bloque: 0
+Bloqueo: 1
+writeStr: Hola mundo
+Value: E0
+Pare por halt
+ingrese numero de archivos: ---------------------------proceso 0
+---------------------------proceso 1
+Value: 0000000000000000
+Entre a la politica 1 writeDatanum
+Value: 0000200040000000
+Entre a la politica 2 writeDatanum
+Value: 5100040004000000
+Entre a la politica 2 de readDatanum
+Entre a la politica 1 de readDatanum
+Entre a la politica 3 writeDatanum------bloque: 0
+Bloqueo: 1
+Value: 90004000
+Entre a la politica 3 readDatanum------bloque: 0
+bloque: 1
+writeInt: 2147483646
+Value: 1000000000000000
+Entre a la politica 3 writeDatastr------bloque: 0
+bloque: 1
+Value: B0000000
+Entre a la politica 3 readDatastr------bloque: 0
+Value: 0000000000000000
+Bloqueo: 1
+Entre a la politica 1 writeDatanum
+writeStr: Hola mundo
+Value: 0000200040000000
+Value: E0
+Entre a la politica 2 writeDatanum
+Pare por halt
+Value: 5100040004000000
+Entre a la politica 2 de readDatanum
+Entre a la politica 1 de readDatanum
+Entre a la politica 3 writeDatanum------bloque: 0
+Bloqueo: 1
+Value: 90004000
+Entre a la politica 3 readDatanum------bloque: 0
+bloque: 1
+writeInt: 2147483646
+Value: 1000000000000000
+Entre a la politica 3 writeDatastr------bloque: 0
+bloque: 1
+Value: B0000000
+Entre a la politica 3 readDatastr------bloque: 0
+Bloqueo: 1
+writeStr: Hola mundo
+Value: E0
+Pare por halt

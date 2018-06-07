@@ -163,29 +163,47 @@ int main(int argc, char* argv[]){
   }
   int numArch=0;
   cout << "ingrese numero de archivos: ";
-  numArch=1;
+  numArch=2;
   //cin>>numArch;
   string archivos[numArch];
   // for(int i=0; i<numArch; i++){
   //   cout<<"ingrese nombre del archivo: ";
   //   cin>>archivos[i];
   // }
-  archivos[0]="test.bew";
-  //archivos[1]="test.bew";
+  archivos[0]="test2.bew";
+  archivos[1]="test2.bew";
   Control* c = new Control();
   c->mainMemory(memoryName,fileName, c);
   Interpreter* interewe = new Interpreter(c->memg, c->litnum, c->litstr, c->datanum, c->datastr, c->workload);
 
-  pid_t proc;
+  pid_t proc[numArch];
   for(int i=0; i<numArch; i++){
-    if ((proc = ::fork()) == 0) {
+    if ((proc[i] = ::fork()) == 0) {
       cout << "---------------------------proceso " << i << endl;
       interewe->proceso(archivos[i]);
       _exit(EXIT_SUCCESS);
     }
   }
   int status;
-  waitpid(proc, &status, 0);
+  for(int i=0; i<numArch; i++){
+    waitpid(proc[i], &status, 0);
+  }
+
+  // pid_t proc1;
+  // for( ;;){
+  //   cout<<"Ingrese: "<<endl;
+  //   int var;
+  //   cin>>var;
+  //   if (var==1){
+  //     if ((proc1 = ::fork()) == 0) {
+  //       cout << "---------------------------proceso------------------- " << endl;
+  //       interewe->proceso(archivos[0]);
+  //       _exit(EXIT_SUCCESS);
+  //     }
+  //   }
+
+  //}
+
   //waitpid(proc2, &status, 0);
   return 0;
 }

@@ -1,6 +1,5 @@
 #include "interpreter.h"
 
-
 int politicas[4];
 int inicio[4];
 int fin[4];
@@ -10,8 +9,7 @@ int finLineas[8];
 int cuentaescr=0;
 int cuentalect=0;
 int cuentalect2=0;
-
-
+int bloqueo=1;
 
 Interpreter::Interpreter(int *memg1, int *litnum1, int *litstr1, int *datanum1, char *datastr1, sem_t *workload1):
  memg(memg1), litnum(litnum1), litstr(litstr1), datanum(datanum1), datastr(datastr1),workload(workload1){
@@ -121,10 +119,13 @@ char* Interpreter::readDatastr(char *datastr, int pos, int tamano,int politica){
 
   }else if(politica==3){
     sem_wait(&(*(workload+7)));
-    cout<<"Entre a la politica 3 readDatastr"<<endl;
+    bloqueo--;
+    cout<<"Entre a la politica 3 readDatastr------bloque: "<<bloqueo<<endl;
     for(int i=0;*((char*)datastr+i)!='\0' && i<tamano;i++){
       cadena[i]=(char *)(datastr+pos+i);
     }
+    bloqueo++;
+    cout<<"Bloqueo: "<<bloqueo<<endl;
     sem_post(&(*(workload+7)));
 
   }else if(politica==4){
@@ -178,8 +179,13 @@ int Interpreter::readDatanum(int *datanum, int pos,int politica){
 
   }else if(politica==3){
     sem_wait(&(*(workload+7)));
-    cout<<"Entre a la politica 3 readDatanum"<<endl;
+    bloqueo--;
+    cout<<"Entre a la politica 3 readDatanum------bloque: "<<bloqueo<<endl;
+
     valorRetornar= *(datanum+pos);
+    bloqueo++;
+    cout<<"bloque: "<<bloqueo<<endl;
+
     sem_post(&(*(workload+7)));
     return valorRetornar;
   }else if(politica==4){
@@ -222,12 +228,16 @@ void Interpreter::writeDatastr(char *datastr, int pos, char* data,int politica){
     }
   }else if(politica==3){//Bloqueo
     sem_wait(&(*(workload+7)));
-    cout<<"Entre a la politica 3 writeDatastr"<<endl;
+    bloqueo--;
+    cout<<"Entre a la politica 3 writeDatastr------bloque: "<<bloqueo<<endl;
     for(int i=0; i<strlen(data); i++){
       *(datastr + pos + i) = (char)data[i];
     }
     *(datastr + pos + strlen(data)) = '\0';
+    bloqueo++;
+    cout<<"bloque: "<<bloqueo<<endl;
     sem_post(&(*(workload+7)));
+
   }  else if (politica==4){
     cout<<"Entre a la politica 4 writeDatastr"<<endl;
     for(int i=0; i<strlen(data); i++){
@@ -274,8 +284,11 @@ void Interpreter::writeDatanum(int *datanum, int pos, int data,int politica){
 
   }else if(politica==3){//Bloqueo
     sem_wait(&(*(workload+7)));
-    cout<<"Entre a la politica 3 writeDatanum"<<endl;
+    bloqueo--;
+    cout<<"Entre a la politica 3 writeDatanum------bloque: "<<bloqueo<<endl;
     *(datanum + pos) = data;
+    bloqueo++;
+    cout<<"Bloqueo: "<<bloqueo<<endl;
     sem_post(&(*(workload+7)));
   }  else if(politica==4){
 
@@ -300,14 +313,14 @@ int Interpreter::interprete(int opcode, string value,int pc){
     case 0:{
 
       cout << "Value: "<< value<<endl;
-      cout << "Opcode: "<<opcode<<endl;
+      //cout << "Opcode: "<<opcode<<endl;
       memref=(stoi(value.substr(1,4),0,16))>>1;
-      cout<<"memref: "<< memref<<endl;
+      //cout<<"memref: "<< memref<<endl;
       poslitnum=((stoi(value.substr(4,5),0,16))&131068)>>2;
-      cout <<"litnum: "<< poslitnum<<endl;
-      cout << "Es: "<< readLitnum(litnum,poslitnum) <<endl;
+      //cout <<"litnum: "<< poslitnum<<endl;
+      //cout << "Es: "<< readLitnum(litnum,poslitnum) <<endl;
       int readValue = readLitnum(litnum,poslitnum);
-      cout << "datanum: " << datanum+memref << " - " << datanum << endl;
+      //cout << "datanum: " << datanum+memref << " - " << datanum << endl;
 
       if((inicio[0]-fin[0]!=0) && (memref>=inicioLineas[0] && memref<=finLineas[0])){
         writeDatanum(datanum, memref, readValue,1);
@@ -325,11 +338,11 @@ int Interpreter::interprete(int opcode, string value,int pc){
     }
     case 1:{
       cout << "Value: "<< value<<endl;
-      cout << "Opcode: "<<opcode<<endl;
+      //cout << "Opcode: "<<opcode<<endl;
       memref=(stoi(value.substr(1,4),0,16))>>1;
-      cout<<"memref: "<< memref<<endl;
+      //cout<<"memref: "<< memref<<endl;
       poslitstr=(((stoi(value.substr(4,5),0,16))&131068)>>2);
-      cout <<"litstr: "<< poslitstr<<endl;
+      //cout <<"litstr: "<< poslitstr<<endl;
       char* readValue = readLitstr(litstr,poslitstr,10);
       //cout<<"salida de readvalue: "<<readValue<<endl;
       //writeDatastr(datastr, memref, readValue,-1);
@@ -350,11 +363,11 @@ int Interpreter::interprete(int opcode, string value,int pc){
     }
     case 2:{
       cout << "Value: "<< value<<endl;
-      cout << "Opcode: "<<opcode<<endl;
+      //cout << "Opcode: "<<opcode<<endl;
       memref=(stoi(value.substr(1,4),0,16))>>1;
-      cout<<"memref: "<< memref<<endl;
+      //cout<<"memref: "<< memref<<endl;
       poslitnum=((stoi(value.substr(4,5),0,16))&131068)>>2;
-      cout <<"litnum: "<< poslitnum<<endl;
+      //cout <<"litnum: "<< poslitnum<<endl;
       int readValue = readLitnum(litnum,poslitnum);
       //writeDatanum(datanum,memref,(readValue+pc),-1);
       if((inicio[0]-fin[0]!=0) && (memref>=inicioLineas[0] && memref<=finLineas[0])){
@@ -372,9 +385,9 @@ int Interpreter::interprete(int opcode, string value,int pc){
     }
     case 3:{
       cout << "Value: "<< value<<endl;
-      cout << "Opcode: "<<opcode<<endl;
+      //cout << "Opcode: "<<opcode<<endl;
       memref=(stoi(value.substr(1,4),0,16))>>1;
-      cout<<"memref: "<< memref<<endl;
+      //cout<<"memref: "<< memref<<endl;
       //int readValue = readDatanum(datanum,memref,-1);
       int readValue;
       if((inicio[0]-fin[0]!=0) && (memref>=inicioLineas[0] && memref<=finLineas[0])){
@@ -392,14 +405,14 @@ int Interpreter::interprete(int opcode, string value,int pc){
     }
     case 4:{
       cout << "Value: "<< value<<endl;
-      cout << "Opcode: "<<opcode<<endl;
+      //cout << "Opcode: "<<opcode<<endl;
       trans=((stoi(value.substr(1,1),0,16))&8)>>3;
-      cout<<"transf: "<< trans<<endl;
+      //cout<<"transf: "<< trans<<endl;
       memref=(stoi(value.substr(1,4),0,16))&32767;
-      cout<<"memref: "<< memref<<endl;
+      //cout<<"memref: "<< memref<<endl;
       if (trans){
           posdatanum=(stoi(value.substr(5,4),0,16)>>1);
-          cout <<"litnum: "<< posdatanum<<endl;
+          //cout <<"litnum: "<< posdatanum<<endl;
           //int readValue = readDatanum(datanum,posdatanum,-1);
           int readValue;
           if((inicio[0]-fin[0]!=0) && (posdatanum>=inicioLineas[0] && posdatanum<=finLineas[0])){
@@ -428,7 +441,7 @@ int Interpreter::interprete(int opcode, string value,int pc){
           }
       }else{
           posdatastr=(stoi(value.substr(5,4),0,16)>>1);
-          cout <<"litstr: "<< posdatastr<<endl;
+          //cout <<"litstr: "<< posdatastr<<endl;
           //char* readValue = readDatastr(datastr,posdatastr,128,-1);
           char* readValue;
           if((inicio[0]-fin[0]!=0) && (posdatastr>=inicioLineas[0] && posdatastr<=finLineas[0])){
@@ -459,17 +472,17 @@ int Interpreter::interprete(int opcode, string value,int pc){
     }
     case 5:{
       cout << "Value: "<< value<<endl;
-      cout << "Opcode: "<<opcode<<endl;
+      //cout << "Opcode: "<<opcode<<endl;
       op=(stoi(value.substr(1,1),0,16))>>1;
-      cout<<"operation: "<< op<<endl;
+      //cout<<"operation: "<< op<<endl;
       trans=(stoi(value.substr(1,1),0,16))&1;
-      cout<<"transf: "<< trans<<endl;
+      //cout<<"transf: "<< trans<<endl;
       memref=(stoi(value.substr(2,4),0,16))>>1;
-      cout<<"memref: "<< memref<<endl;
+      //cout<<"memref: "<< memref<<endl;
       memref1=((stoi(value.substr(5,5),0,16))&131068)>>2;
       memref2=((stoi(value.substr(9,5),0,16))&262136)>>3;
-      cout<<"memref1: "<< memref1<<endl;
-      cout<<"memref2: "<< memref2<<endl;
+      //cout<<"memref1: "<< memref1<<endl;
+      //cout<<"memref2: "<< memref2<<endl;
       if (trans){
           int result;
           //int readValue1 = readDatanum(datanum,memref1,-1);
@@ -488,19 +501,21 @@ int Interpreter::interprete(int opcode, string value,int pc){
           //int readValue2 = readDatanum(datanum,memref2,-1);
           int readValue2;
           if((inicio[0]-fin[0]!=0) && (memref2>=inicioLineas[0] && memref2<=finLineas[0])){
-            readValue1 = readDatanum(datanum,memref2,1);
+            readValue2 = readDatanum(datanum,memref2,1);
           }else if ((inicio[1]-fin[1]!=0) && (memref2>=inicioLineas[2] && memref2<=finLineas[2])){
-            readValue1 = readDatanum(datanum,memref2,2);
+            readValue2 = readDatanum(datanum,memref2,2);
           }else if ((inicio[2]-fin[2]!=0) && (memref2>=inicioLineas[4] && memref2<=finLineas[4])){
-            readValue1 = readDatanum(datanum,memref2,3);
+            readValue2 = readDatanum(datanum,memref2,3);
           }else if ((inicio[3]-fin[3]!=0) && (memref2>=inicioLineas[6] && memref2<=finLineas[6])){
-            readValue1 = readDatanum(datanum,memref2,4);
+            readValue2 = readDatanum(datanum,memref2,4);
           }else{
             cout<<"Error de segmento"<<endl;
           }
         if(op==0){
           //int readValue1 = readDatanum(datanum,memref1,-1);
           //int readValue2 = readDatanum(datanum,memref2,-1);
+
+          //cout<<"valor1: "<<readValue1<<" valor2: "<<readValue2<<endl;
           result= readValue1+readValue2;
           //writeDatanum(datanum,memref,result,-1);
         }else if(op==1){
@@ -686,14 +701,14 @@ int Interpreter::interprete(int opcode, string value,int pc){
     }
     case 6:{
       cout << "Value: "<< value<<endl;
-      cout << "Opcode: "<<opcode<<endl;
+      //cout << "Opcode: "<<opcode<<endl;
       trans=((stoi(value.substr(1,1),0,16))&8)>>3;
-      cout<<"transf: "<< trans<<endl;
+      //cout<<"transf: "<< trans<<endl;
       memref=(stoi(value.substr(1,4),0,16))&32767;
-      cout<<"memref: "<< memref<<endl;
+      //cout<<"memref: "<< memref<<endl;
       if (trans){
           posdatanum=(stoi(value.substr(5,4),0,16)>>1);
-          cout <<"litnum: "<< posdatanum<<endl;
+          //cout <<"litnum: "<< posdatanum<<endl;
           enteroDes=(stoi(value.substr(8,5),0,16)&131068);
 
           int readValue=readLitnum(litnum,enteroDes);
@@ -725,7 +740,7 @@ int Interpreter::interprete(int opcode, string value,int pc){
           }
       }else{
           posdatastr=(stoi(value.substr(5,4),0,16)>>1);
-          cout <<"litstr: "<< posdatastr<<endl;
+          //cout <<"litstr: "<< posdatastr<<endl;
           enteroDes=(stoi(value.substr(8,5),0,16)&131068);
           int readValue=readLitnum(litnum,enteroDes);
           char* readValue2;// = readDatastr(datastr,posdatastr+readValue,128,-1);
@@ -759,15 +774,15 @@ int Interpreter::interprete(int opcode, string value,int pc){
     }
     case 7:{
       cout << "Value: "<< value<<endl;
-      cout << "Opcode: "<<opcode<<endl;
+      //cout << "Opcode: "<<opcode<<endl;
       trans=((stoi(value.substr(1,1),0,16))&8)>>3;
-      cout<<"transf: "<< trans<<endl;
+      //cout<<"transf: "<< trans<<endl;
       memref=(stoi(value.substr(1,4),0,16))&32767;
-      cout<<"memref: "<< memref<<endl;
+      //cout<<"memref: "<< memref<<endl;
       if (trans){
           enteroDes=(stoi(value.substr(5,4),0,16)>>1);
           posdatanum=(stoi(value.substr(8,5),0,16)&131068);
-          cout <<"litnum: "<< posdatanum<<endl;
+          //cout <<"litnum: "<< posdatanum<<endl;
           int readValue=readLitnum(litnum,enteroDes);
           //int readValue2=readDatanum(datanum,posdatanum,-1);
 
@@ -800,7 +815,7 @@ int Interpreter::interprete(int opcode, string value,int pc){
       }else{
           enteroDes=(stoi(value.substr(5,4),0,16)>>1);
           posdatastr=(stoi(value.substr(8,5),0,16)&131068);
-          cout <<"litstr: "<< posdatastr<<endl;
+          //cout <<"litstr: "<< posdatastr<<endl;
           int readValue=readLitnum(litnum,enteroDes);
           char* readValue2;// = readDatastr(datastr,posdatastr,128,-1);
           if((inicio[0]-fin[0]!=0) && (posdatastr>=inicioLineas[1] && posdatastr<=finLineas[1])){
@@ -832,9 +847,9 @@ int Interpreter::interprete(int opcode, string value,int pc){
     }
     case 8:{
       cout << "Value: "<< value<<endl;
-      cout << "Opcode: "<<opcode<<endl;
+      //cout << "Opcode: "<<opcode<<endl;
       memref=(stoi(value.substr(1,4),0,16))>>1;
-      cout<<"memref: "<< memref<<endl;
+      //cout<<"memref: "<< memref<<endl;
       int readValue;
       cout<<"Ingrese un entero: ";
       cin>>readValue;
@@ -854,9 +869,9 @@ int Interpreter::interprete(int opcode, string value,int pc){
     }
     case 9:{
       cout << "Value: "<< value<<endl;
-      cout << "Opcode: "<<opcode<<endl;
+      //cout << "Opcode: "<<opcode<<endl;
       memref=(stoi(value.substr(1,4),0,16))>>1;
-      cout<<"memref: "<< memref<<endl;
+      //cout<<"memref: "<< memref<<endl;
       //int readValue=readDatanum(datanum,memref,-1);
       int readValue;
       if((inicio[0]-fin[0]!=0) && (memref>=inicioLineas[0] && memref<=finLineas[0])){
@@ -877,9 +892,9 @@ int Interpreter::interprete(int opcode, string value,int pc){
     }
     case 10:{
       cout << "Value: "<< value<<endl;
-      cout << "Opcode: "<<opcode<<endl;
+      //cout << "Opcode: "<<opcode<<endl;
       memref=(stoi(value.substr(1,4),0,16))>>1;
-      cout<<"memref: "<< memref<<endl;
+      //cout<<"memref: "<< memref<<endl;
       memref2=((stoi(value.substr(4,5),0,16))&131068)>>2;
       string valor;
       for (int i=0;i<memref2;i++){
@@ -909,9 +924,9 @@ int Interpreter::interprete(int opcode, string value,int pc){
     }
     case 11:{
       cout << "Value: "<< value<<endl;
-      cout << "Opcode: "<<opcode<<endl;
+      //cout << "Opcode: "<<opcode<<endl;
       memref=(stoi(value.substr(1,4),0,16))>>1;
-      cout<<"memref: "<< memref<<endl;
+      //cout<<"memref: "<< memref<<endl;
       //char* readValue=readDatastr(datastr,memref,128,-1);
       char* readValue;// = readDatastr(datastr,memref1,128,-1);
       if((inicio[0]-fin[0]!=0) && (memref>=inicioLineas[1] && memref<=finLineas[1])){
@@ -930,7 +945,7 @@ int Interpreter::interprete(int opcode, string value,int pc){
     }
     case 12:{
       cout << "Value: "<< value<<endl;
-      cout << "Opcode: "<<opcode<<endl;
+      //cout << "Opcode: "<<opcode<<endl;
       memref=(stoi(value.substr(1,4),0,16))>>1;
       int readValue=readLitnum(litnum,memref);
       pc=readValue;
@@ -938,17 +953,17 @@ int Interpreter::interprete(int opcode, string value,int pc){
     }
     case 13:{
       cout << "Value: "<< value<<endl;
-      cout << "Opcode: "<<opcode<<endl;
+      //cout << "Opcode: "<<opcode<<endl;
       op=(stoi(value.substr(1,1),0,16))>>1;
-      cout<<"operation: "<< op<<endl;
+      //cout<<"operation: "<< op<<endl;
       trans=(stoi(value.substr(1,1),0,16))&1;
-      cout<<"transf: "<< trans<<endl;
+      //cout<<"transf: "<< trans<<endl;
       memref=(stoi(value.substr(2,4),0,16))>>1;
-      cout<<"memref: "<< memref<<endl;
+      //cout<<"memref: "<< memref<<endl;
       memref1=((stoi(value.substr(5,5),0,16))&131068)>>2;
       memref2=((stoi(value.substr(9,5),0,16))&262136)>>3;
-      cout<<"memref1: "<< memref1<<endl;
-      cout<<"memref2: "<< memref2<<endl;
+      //cout<<"memref1: "<< memref1<<endl;
+      //cout<<"memref2: "<< memref2<<endl;
 
       if (trans){
 
@@ -1063,13 +1078,13 @@ int Interpreter::interprete(int opcode, string value,int pc){
     }
     case 14:{
       cout << "Value: "<< value<<endl;
-      cout << "Opcode: "<<opcode<<endl;
+      //cout << "Opcode: "<<opcode<<endl;
       pc=-1;
       return pc;
     }
     case 15:{
       cout << "Value: "<< value<<endl;
-      cout << "Opcode: "<<opcode<<endl;
+      //cout << "Opcode: "<<opcode<<endl;
       pc=-2;
       return pc;
     }
@@ -1229,13 +1244,16 @@ void Interpreter::proceso(string file){
 
         }
       }
-      for(int i=0; i<8; i++){
+      /*for(int i=0; i<8; i++){
         cout << "inicioLineas: " << inicioLineas[i] << " finLineas: " << finLineas[i] << endl;
-      }
+      }*/
 
       for(int i = 0; i < instructions.size() ; i++)
       {
+        int valor=i;
+        int respuesta;
         opcode = stoi(instructions[i].substr(0,1),0,16);
+
         i = interprete(opcode, instructions[i],i);
         if (i==-1){
           cout <<"Pare por halt"<<endl;
@@ -1243,7 +1261,13 @@ void Interpreter::proceso(string file){
         }
         if (i==-2){
           cout <<"Pare por break"<<endl;
-          i=instructions.size();
+          cout<<"Quiere continuar? (si=1,no=0)"<<endl;
+          cin>>respuesta;
+          if(respuesta){
+              i=valor;
+          }else{
+            i=instructions.size();
+          }
         }
 
       }
